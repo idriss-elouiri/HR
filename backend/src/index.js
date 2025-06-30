@@ -3,6 +3,7 @@ import cors from "cors";
 import { connectDb } from "./config/db.js";
 import authRouter from "./modules/auth/auth.route.js";
 import employeeRouter from "./modules/employee/employee.route.js";
+import salarieRouter from "./modules/salarie/salary.route.js";
 import cookieParser from "cookie-parser";
 import dotenv from "dotenv";
 
@@ -24,6 +25,7 @@ app.use(
 
 app.use("/api/auth", authRouter);
 app.use("/api/employees", employeeRouter);
+app.use("/api/salaries", salarieRouter);
 
 app.get("/*", (req, res) => {
     res.json("hello world");
