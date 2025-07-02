@@ -4,6 +4,9 @@ import { connectDb } from "./config/db.js";
 import authRouter from "./modules/auth/auth.route.js";
 import employeeRouter from "./modules/employee/employee.route.js";
 import salarieRouter from "./modules/salarie/salary.route.js";
+import leaveRouter from './modules/leave/leave.route.js';
+import absenceRouter from './modules/absence/absences.route.js';
+import reportRouter from './modules/report/report.route.js';
 import cookieParser from "cookie-parser";
 import dotenv from "dotenv";
 
@@ -26,6 +29,9 @@ app.use(
 app.use("/api/auth", authRouter);
 app.use("/api/employees", employeeRouter);
 app.use("/api/salaries", salarieRouter);
+app.use('/api/leaves', leaveRouter);
+app.use('/api/absences', absenceRouter);
+app.use('/api/reports', reportRouter);
 
 app.get("/*", (req, res) => {
     res.json("hello world");

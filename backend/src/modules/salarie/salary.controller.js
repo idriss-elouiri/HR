@@ -163,18 +163,25 @@ export const generatePayslip = async (req, res, next) => {
 
 export const getSalary = async (req, res, next) => {
     try {
-        const salary = await Salary.findById(req.params.id).populate(
-            "employee",
-            "fullName employeeId department jobTitle"
-        );
+        const salary = await Salary.findById(req.params.id)
+            .populate("employee", "fullName employeeId department jobTitle salary")
+            .lean(); // تحويل إلى كائن عادي
 
         if (!salary) {
             return next(errorHandler(404, "السجل غير موجود"));
         }
 
+        // إضافة قيم افتراضية إذا كانت غير موجودة
+        const result = {
+            allowances: [],
+            deductions: [],
+            socialInsurance: { amount: 0, percentage: 10 },
+            ...salary
+        };
+
         res.status(200).json({
             success: true,
-            data: salary,
+            data: result,
         });
     } catch (error) {
         next(error);

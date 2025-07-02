@@ -1,3 +1,4 @@
+// src/components/Sidebar.js
 import Link from "next/link";
 import React from "react";
 import { useSelector } from "react-redux";
@@ -6,6 +7,8 @@ import {
     FaUserTie,
     FaBriefcase,
     FaSignOutAlt,
+    FaCalendarAlt,
+    FaUserClock
 } from "react-icons/fa";
 import { MdPeopleAlt } from "react-icons/md";
 
@@ -34,23 +37,37 @@ const Sidebar = () => {
                     </Link>
                 )}
 
-                {isAdmin && (
-                    <Link
-                        href="/Employee"
-                        className="flex items-center gap-3 py-2 px-4 rounded-lg hover:bg-blue-700 transition"
-                    >
-                        <MdPeopleAlt />
-                        <span>الموظفون</span>
-                    </Link>
-                )}
-
                 <Link
                     href="/Employees"
                     className="flex items-center gap-3 py-2 px-4 rounded-lg hover:bg-blue-700 transition"
                 >
+                    <MdPeopleAlt />
+                    <span>الموظفون</span>
+                </Link>
+
+                <Link
+                    href="/Salaries"
+                    className="flex items-center gap-3 py-2 px-4 rounded-lg hover:bg-blue-700 transition"
+                >
                     <FaBriefcase />
-                    <span>بيانات الموظفين
-                    </span>
+                    <span>الرواتب المالية</span>
+                </Link>
+
+                {/* إضافة قسم الإجازات والغياب */}
+                <Link
+                    href="/LeavesAbsences"
+                    className="flex items-center gap-3 py-2 px-4 rounded-lg hover:bg-blue-700 transition"
+                >
+                    <FaCalendarAlt />
+                    <span>الإجازات والغياب</span>
+                </Link>
+
+                <Link
+                    href="/Reports"
+                    className="flex items-center gap-3 py-2 px-4 rounded-lg hover:bg-blue-700 transition"
+                >
+                    <FaUserClock />
+                    <span>التقارير والإشعارات</span>
                 </Link>
 
                 <button

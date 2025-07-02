@@ -124,13 +124,19 @@ const employeeSchema = new mongoose.Schema(
       date: Date,
       description: String
     }],
-
+    leaveSettings: {
+      سنوية: { type: Number, default: 21 },
+      مرضية: { type: Number, default: 30 },
+      أمومة: { type: Number, default: 60 },
+      بدون_راتب: { type: Number, default: 365 }
+    },
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
       required: true
     },
   },
+
   {
     timestamps: true,
     toJSON: { virtuals: true },
