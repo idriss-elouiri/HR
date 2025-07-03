@@ -4,7 +4,8 @@ import {
   getEmployees,
   getEmployee,
   updateEmployee,
-  deleteEmployee
+  deleteEmployee,
+  updateEmployeeShift
 } from './employee.controller.js';
 import { validateZod } from '../../middlewares/validate-zod.js';
 import { employeeSchema } from './employee.schema.js';
@@ -22,5 +23,7 @@ router.route('/:id')
   .get(getEmployee)
   .put(validateZod(employeeSchema.partial()), updateEmployee)
   .delete(deleteEmployee);
+
+router.put('/:id/shift', verifyToken, updateEmployeeShift);
 
 export default router;

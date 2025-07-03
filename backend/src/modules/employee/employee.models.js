@@ -130,6 +130,10 @@ const employeeSchema = new mongoose.Schema(
       أمومة: { type: Number, default: 60 },
       بدون_راتب: { type: Number, default: 365 }
     },
+    shift: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Shift'
+    },
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",

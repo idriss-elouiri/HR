@@ -3,31 +3,22 @@ import Absence from "./Absence.model.js";
 import Employee from "../employee/employee.models.js";
 import { errorHandler } from "../../utils/error.js";
 
+
 export const createAbsence = async (req, res, next) => {
     try {
-        const absenceData = {
-            ...req.body,
-            employee: req.body.employeeId,
-            createdBy: req.user.id
-        };
-
-        const employee = await Employee.findById(req.body.employeeId);
+        const employee = await Employee.findById(req.body.employee);
         if (!employee) return next(errorHandler(404, "الموظف غير موجود"));
 
-        // التحقق من عدم وجود غياب مسجل لنفس الموظف في نفس اليوم
-        const existingAbsence = await Absence.findOne({
-            employee: req.body.employeeId,
-            date: {
-                $gte: new Date(req.body.date).setHours(0, 0, 0, 0),
-                $lt: new Date(req.body.date).setHours(23, 59, 59, 999)
-            }
+        // Ensure duration is properly handled
+        const duration = req.body.type === 'غياب كامل'
+            ? 8
+            : parseFloat(req.body.duration);
+
+        const absence = await Absence.create({
+            ...req.body,
+            duration,
+            createdBy: req.user.id
         });
-
-        if (existingAbsence) {
-            return next(errorHandler(400, "تم تسجيل غياب لهذا الموظف في هذا اليوم مسبقاً"));
-        }
-
-        const absence = await Absence.create(absenceData);
 
         res.status(201).json({
             success: true,

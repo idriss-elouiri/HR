@@ -7,6 +7,8 @@ import salarieRouter from "./modules/salarie/salary.route.js";
 import leaveRouter from './modules/leave/leave.route.js';
 import absenceRouter from './modules/absence/absences.route.js';
 import reportRouter from './modules/report/report.route.js';
+import departmentRouter from './modules/department/department.route.js';
+import shiftRouter from './modules/shift/shift.model.js';
 import cookieParser from "cookie-parser";
 import dotenv from "dotenv";
 
@@ -32,6 +34,8 @@ app.use("/api/salaries", salarieRouter);
 app.use('/api/leaves', leaveRouter);
 app.use('/api/absences', absenceRouter);
 app.use('/api/reports', reportRouter);
+app.use('/api/departments', departmentRouter);
+app.use('/api/shifts', shiftRouter);
 
 app.get("/*", (req, res) => {
     res.json("hello world");

@@ -8,7 +8,8 @@ import {
     FaBriefcase,
     FaSignOutAlt,
     FaCalendarAlt,
-    FaUserClock
+    FaUserClock,
+    FaPlaneDeparture
 } from "react-icons/fa";
 import { MdPeopleAlt } from "react-icons/md";
 
@@ -68,6 +69,14 @@ const Sidebar = () => {
                 >
                     <FaUserClock />
                     <span>التقارير والإشعارات</span>
+                </Link>
+
+                <Link
+                    href="/DepartmentsShifts"
+                    className="flex items-center gap-3 py-2 px-4 rounded-lg hover:bg-blue-700 transition"
+                >
+                    <FaPlaneDeparture />
+                    <span>إدارة الشفتات</span>
                 </Link>
 
                 <button

@@ -37,7 +37,10 @@ const LeavesAbsences = () => {
 
   const fetchAbsences = async () => {
     try {
-      const response = await fetch(`${apiUrl}/api/absences`);
+      const response = await fetch(`${apiUrl}/api/absences`, {
+        credentials: 'include',
+
+      });
       if (!response.ok) throw new Error('فشل في جلب البيانات');
       const data = await response.json();
       setAbsences(data.data || data || []); // 

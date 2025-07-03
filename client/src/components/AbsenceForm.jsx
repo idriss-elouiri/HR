@@ -1,4 +1,3 @@
-// components/AbsenceForm.js
 'use client';
 import { useState, useEffect } from 'react';
 import { useFormik } from 'formik';
@@ -12,7 +11,15 @@ import {
     FaSync,
     FaClock
 } from 'react-icons/fa';
-import DatePicker from 'react-datepicker';
+import dynamic from 'next/dynamic';
+// Fix 1: Use dynamic import for DatePicker
+const DatePicker = dynamic(
+    () => import('react-datepicker').then(mod => mod.default),
+    {
+        ssr: false,
+        loading: () => <div className="w-full p-3 border border-gray-300 rounded-lg">جار التحميل...</div>
+    }
+);
 import 'react-datepicker/dist/react-datepicker.css';
 import { toast } from 'react-toastify';
 
@@ -33,8 +40,10 @@ const AbsenceForm = ({ absence, onSuccess, onCancel }) => {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [employees, setEmployees] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [isDatePickerLoaded, setIsDatePickerLoaded] = useState(false);
     const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
+    // Fix 2: Improved validation for duration
     const validationSchema = Yup.object({
         employee: Yup.string().required('اختيار الموظف مطلوب'),
         type: Yup.string().required('نوع الغياب مطلوب'),
@@ -42,10 +51,13 @@ const AbsenceForm = ({ absence, onSuccess, onCancel }) => {
         duration: Yup.number()
             .min(0.1, 'يجب أن تكون المدة 0.1 على الأقل')
             .max(24, 'لا يمكن أن تتجاوز المدة 24 ساعة')
-            .when('type', {
-                is: (type) => type !== 'غياب كامل',
-                then: Yup.number().required('مدة الغياب مطلوبة')
-            }),
+            .test(
+                'duration-required',
+                'مدة الغياب مطلوبة',
+                function (value) {
+                    return this.parent.type === 'غياب كامل' || !!value;
+                }
+            ),
         reason: Yup.string()
             .required('سبب الغياب مطلوب')
             .max(500, 'الحد الأقصى 500 حرف'),
@@ -72,11 +84,11 @@ const AbsenceForm = ({ absence, onSuccess, onCancel }) => {
 
                 const method = absence ? 'PUT' : 'POST';
 
-                // إذا كان الغياب كاملاً، ضبط المدة على 8 ساعات
                 const finalValues = {
                     ...values,
                     date: values.date.toISOString(),
-                    duration: values.type === 'غياب كامل' ? 8 : values.duration
+                    // Fix 3: Ensure proper duration handling
+                    duration: values.type === 'غياب كامل' ? 8 : parseFloat(values.duration)
                 };
 
                 const response = await fetch(url, {
@@ -84,6 +96,7 @@ const AbsenceForm = ({ absence, onSuccess, onCancel }) => {
                     headers: {
                         'Content-Type': 'application/json',
                     },
+                    credentials: 'include', // Add credentials for authentication
                     body: JSON.stringify(finalValues),
                 });
 
@@ -104,7 +117,9 @@ const AbsenceForm = ({ absence, onSuccess, onCancel }) => {
     useEffect(() => {
         const fetchEmployees = async () => {
             try {
-                const response = await fetch(`${apiUrl}/api/employees`);
+                const response = await fetch(`${apiUrl}/api/employees`, {
+                    credentials: 'include' // Add credentials
+                });
                 const data = await response.json();
                 setEmployees(data.data || []);
             } catch (error) {
@@ -115,6 +130,9 @@ const AbsenceForm = ({ absence, onSuccess, onCancel }) => {
         };
 
         fetchEmployees();
+
+        // Fix 4: Ensure DatePicker loads properly
+        setIsDatePickerLoaded(true);
     }, []);
 
     const inputClass = (touched, error) =>
@@ -185,12 +203,14 @@ const AbsenceForm = ({ absence, onSuccess, onCancel }) => {
                         تاريخ الغياب
                     </label>
                     <div className="relative">
-                        <DatePicker
-                            selected={formik.values.date}
-                            onChange={(date) => formik.setFieldValue('date', date)}
-                            dateFormat="yyyy/MM/dd"
-                            className={inputClass(formik.touched.date, formik.errors.date)}
-                        />
+                        {isDatePickerLoaded && (
+                            <DatePicker
+                                selected={formik.values.date}
+                                onChange={(date) => formik.setFieldValue('date', date)}
+                                dateFormat="yyyy/MM/dd"
+                                className={inputClass(formik.touched.date, formik.errors.date)}
+                            />
+                        )}
                         <FaCalendarAlt className="absolute left-3 top-3.5 text-gray-400" />
                     </div>
                     {formik.touched.date && formik.errors.date && (
@@ -213,7 +233,7 @@ const AbsenceForm = ({ absence, onSuccess, onCancel }) => {
                                 onChange={formik.handleChange}
                                 onBlur={formik.handleBlur}
                                 min="0.1"
-                                max="8"
+                                max="24"
                                 step="0.1"
                                 className={inputClass(formik.touched.duration, formik.errors.duration)}
                                 placeholder="أدخل المدة..."

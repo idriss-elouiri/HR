@@ -1,6 +1,6 @@
 // controllers/report.controller.js
-import Absence from "../absence/Absence.model.js"
-import Leave from "../leave/leave.route.js";
+import Absence from "../absence/Absence.model.js";
+import Leave from "../leave/Leave.model.js";
 import Employee from "../employee/employee.models.js";
 import { errorHandler } from "../../utils/error.js";
 
@@ -17,12 +17,20 @@ export const getMonthlyReport = async (req, res, next) => {
     const startDate = new Date(yearInt, monthInt - 1, 1);
     const endDate = new Date(yearInt, monthInt, 0);
 
-    // تجميع بيانات الإجازات
+    // تجميع بيانات الإجازات (تم التحديث)
     const leaves = await Leave.aggregate([
       {
         $match: {
-          startDate: { $gte: startDate, $lte: endDate },
-          status: "موافق عليها"
+          $or: [
+            {
+              startDate: { $gte: startDate, $lte: endDate },
+              status: "موافق عليها"
+            },
+            {
+              endDate: { $gte: startDate, $lte: endDate },
+              status: "موافق عليها"
+            }
+          ]
         }
       },
       {
@@ -52,7 +60,7 @@ export const getMonthlyReport = async (req, res, next) => {
       }
     ]);
 
-    // تجميع بيانات الغياب
+    // تجميع بيانات الغياب (تم التحديث)
     const absences = await Absence.aggregate([
       {
         $match: {
@@ -89,14 +97,30 @@ export const getMonthlyReport = async (req, res, next) => {
       }
     ]);
 
-    // دمج النتائج
-    const report = leaves.map(leave => {
-      const absence = absences.find(a => a.employeeId === leave.employeeId) || {};
-      return {
+    // دمج النتائج مع تحسينات
+    const report = [];
+
+    // إضافة بيانات الإجازات
+    leaves.forEach(leave => {
+      report.push({
         ...leave,
-        totalAbsences: absence.totalAbsences || 0,
-        totalHours: absence.totalHours || 0
-      };
+        totalAbsences: 0,
+        totalHours: 0
+      });
+    });
+
+    // إضافة بيانات الغياب وتحديث البيانات الموجودة
+    absences.forEach(absence => {
+      const existing = report.find(r => r.employeeId === absence.employeeId);
+      if (existing) {
+        existing.totalAbsences = absence.totalAbsences;
+        existing.totalHours = absence.totalHours;
+      } else {
+        report.push({
+          ...absence,
+          totalLeaves: 0
+        });
+      }
     });
 
     res.status(200).json({
