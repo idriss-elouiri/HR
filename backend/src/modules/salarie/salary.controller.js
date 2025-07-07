@@ -6,7 +6,7 @@ import fs from "fs";
 
 export const createSalary = async (req, res, next) => {
     try {
-        const { employeeId, month, year } = req.body;
+const { employee: employeeId, month, year } = req.body;
 
         // التحقق من صحة البيانات المدخلة
         if (!employeeId || !month || !year) {
@@ -57,6 +57,7 @@ export const createSalary = async (req, res, next) => {
         next(error);
     }
 };
+
 
 export const getSalaries = async (req, res, next) => {
     try {

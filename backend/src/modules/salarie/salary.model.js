@@ -77,9 +77,18 @@ const salarySchema = new mongoose.Schema(
             required: true,
             min: 0,
         },
-        allowances: [allowanceSchema],
-        deductions: [deductionSchema],
-        socialInsurance: socialInsuranceSchema,
+        allowances: {
+            type: [allowanceSchema],
+            default: []
+        },
+        deductions: {
+            type: [deductionSchema],
+            default: []
+        },
+        socialInsurance: {
+            type: socialInsuranceSchema,
+            default: () => ({ amount: 0, percentage: 10 })
+        },
         netSalary: {
             type: Number,
             required: true,
@@ -90,7 +99,9 @@ const salarySchema = new mongoose.Schema(
             default: "مسودة",
         },
         paymentDate: Date,
-        createdBy: {
+        paymentMethod: String,
+        paymentReference: String,
+         createdBy: {
             type: mongoose.Schema.Types.ObjectId,
             ref: "User",
             required: true,

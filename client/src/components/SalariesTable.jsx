@@ -13,6 +13,7 @@ import {
     FaMoneyBillWave, FaPrint, FaFileAlt, FaFilter
 } from 'react-icons/fa';
 import Link from 'next/link';
+import { motion } from 'framer-motion';
 
 const SalariesTable = ({
     data = [],
@@ -33,33 +34,34 @@ const SalariesTable = ({
         {
             header: 'الشهر/السنة',
             accessorFn: (row) => `${row.month}/${row.year}`,
-            cell: ({ getValue }) => (
-                <span className="font-medium">{getValue()}</span>
+            cell: ({ row }) => (
+                <div className="flex flex-col">
+                    <span className="font-bold text-blue-700">{row.month}/{row.year}</span>
+                    <span className="text-xs text-gray-500">
+                        {row.original.employee?.department || 'غير محدد'}
+                    </span>
+                </div>
             ),
         },
         {
             header: 'الموظف',
             accessorFn: (row) => row.employee?.fullName || '---',
-            cell: ({ getValue }) => (
-                <span className="text-gray-700">{getValue()}</span>
+            cell: ({ row }) => (
+                <div className="flex flex-col">
+                    <span className="font-medium">
+                        {row.original.employee?.fullName || '---'}
+                    </span>
+                    <span className="text-xs text-gray-500">
+                        {row.original.employee?.employeeId || '---'}
+                    </span>
+                </div>
             ),
         },
         {
             header: 'الراتب الأساسي',
             accessorKey: 'baseSalary',
             cell: ({ getValue }) => (
-                <span className="font-bold">{Number(getValue()).toLocaleString('ar-SA', {
-                    style: 'currency',
-                    currency: 'SAR',
-                    minimumFractionDigits: 2
-                })}</span>
-            ),
-        },
-        {
-            header: 'إجمالي البدلات',
-            accessorFn: (row) => row.allowances.reduce((sum, a) => sum + a.amount, 0),
-            cell: ({ getValue }) => (
-                <span className="text-green-600 font-medium">
+                <span className="font-bold text-gray-700">
                     {Number(getValue()).toLocaleString('ar-SA', {
                         style: 'currency',
                         currency: 'SAR',
@@ -69,14 +71,27 @@ const SalariesTable = ({
             ),
         },
         {
-            header: 'إجمالي الخصومات',
+            header: 'البدلات',
+            accessorFn: (row) => row.allowances.reduce((sum, a) => sum + a.amount, 0),
+            cell: ({ getValue }) => (
+                <span className="text-green-600 font-medium">
+                    +{Number(getValue()).toLocaleString('ar-SA', {
+                        style: 'currency',
+                        currency: 'SAR',
+                        minimumFractionDigits: 2
+                    })}
+                </span>
+            ),
+        },
+        {
+            header: 'الخصومات',
             accessorFn: (row) => (
                 row.deductions.reduce((sum, d) => sum + d.amount, 0) +
                 (row.socialInsurance?.amount || 0)
             ),
             cell: ({ getValue }) => (
                 <span className="text-red-600 font-medium">
-                    {Number(getValue()).toLocaleString('ar-SA', {
+                    -{Number(getValue()).toLocaleString('ar-SA', {
                         style: 'currency',
                         currency: 'SAR',
                         minimumFractionDigits: 2
@@ -85,7 +100,7 @@ const SalariesTable = ({
             ),
         },
         {
-            header: 'الراتب الصافي',
+            header: 'الصافي',
             accessorKey: 'netSalary',
             cell: ({ getValue }) => (
                 <span className="font-bold text-blue-600">
@@ -109,7 +124,7 @@ const SalariesTable = ({
                 };
 
                 return (
-                    <span className={`px-3 py-1 rounded-full text-sm ${statusClasses[getValue()] || 'bg-gray-100 text-gray-800'}`}>
+                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${statusClasses[getValue()] || 'bg-gray-100 text-gray-800'}`}>
                         {getValue()}
                     </span>
                 );
@@ -119,33 +134,39 @@ const SalariesTable = ({
         {
             header: 'الإجراءات',
             cell: ({ row }) => (
-                <div className="flex space-x-2 rtl:space-x-reverse">
-                    <button
+                <div className="flex space-x-2">
+                    <motion.button
+                        whileHover={{ scale: 1.1 }}
+                        whileTap={{ scale: 0.9 }}
                         onClick={() => onEdit(row.original)}
-                        className="p-2 text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                        className="p-2 text-blue-600 hover:bg-blue-50 rounded-full transition-colors"
                         title="تعديل"
                         aria-label="تعديل"
                     >
                         <FaEdit />
-                    </button>
-                    <button
+                    </motion.button>
+                    <motion.button
+                        whileHover={{ scale: 1.1 }}
+                        whileTap={{ scale: 0.9 }}
                         onClick={() => handleDeleteClick(row.original._id)}
-                        className="p-2 text-red-600 hover:bg-red-50 rounded transition-colors"
+                        className="p-2 text-red-600 hover:bg-red-50 rounded-full transition-colors"
                         title="حذف"
                         aria-label="حذف"
                     >
                         <FaTrash />
-                    </button>
-                    <Link
+                    </motion.button>
+                    <motion.a
+                        whileHover={{ scale: 1.1 }}
+                        whileTap={{ scale: 0.9 }}
                         href={`${apiUrl}/api/salaries/${row.original._id}/payslip`}
-                        className="p-2 text-green-600 hover:bg-green-50 rounded transition-colors"
+                        className="p-2 text-green-600 hover:bg-green-50 rounded-full transition-colors"
                         title="طباعة"
                         aria-label="طباعة"
                         target="_blank"
                         rel="noopener noreferrer"
                     >
                         <FaPrint />
-                    </Link>
+                    </motion.a>
                 </div>
             ),
         },
@@ -165,173 +186,197 @@ const SalariesTable = ({
     });
 
     return (
-        <div className="p-6 bg-white rounded-lg shadow">
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
-                <h2 className="text-xl font-bold text-gray-800 flex items-center">
-                    <FaMoneyBillWave className="ml-2" />
-                    سجل الرواتب
-                </h2>
-                <div className="flex flex-wrap gap-2">
-                    <button
-                        onClick={onAdd}
-                        className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center transition-colors"
-                        disabled={loading}
-                    >
-                        <FaPlus className="ml-2" />
-                        {loading ? 'جاري التحميل...' : 'إضافة راتب'}
-                    </button>
-                    <button
-                        onClick={onRefresh}
-                        className="bg-gray-200 hover:bg-gray-300 text-gray-800 px-4 py-2 rounded-lg flex items-center transition-colors"
-                        disabled={loading}
-                    >
-                        <FaSync className={`ml-2 ${loading ? 'animate-spin' : ''}`} />
-                        تحديث
-                    </button>
-                </div>
-            </div>
-
-            <div className="mb-4 flex flex-col md:flex-row gap-4">
-                <div className="relative flex-grow">
-                    <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                        <FaSearch className="text-gray-400" />
+        <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-200"
+        >
+            <div className="p-6 bg-gradient-to-r from-blue-600 to-indigo-700 text-white">
+                <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+                    <div>
+                        <h2 className="text-xl font-bold">سجل الرواتب</h2>
+                        <p className="text-blue-100 mt-1">إدارة جميع رواتب الموظفين في مكان واحد</p>
                     </div>
-                    <input
-                        placeholder="بحث في جميع الحقول..."
-                        className="pr-10 pl-4 py-2 border border-gray-300 rounded-lg w-full focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                        onChange={(e) => table.setGlobalFilter(e.target.value)}
-                        disabled={loading}
-                    />
-                </div>
-
-                <div className="relative">
-                    <select
-                        className="appearance-none pl-4 pr-10 py-2 border border-gray-300 rounded-lg w-full focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                        onChange={(e) => {
-                            const column = table.getColumn('status');
-                            if (e.target.value === 'all') {
-                                column.setFilterValue(undefined);
-                            } else {
-                                column.setFilterValue(e.target.value);
-                            }
-                        }}
-                        disabled={loading}
-                    >
-                        <option value="all">جميع الحالات</option>
-                        <option value="مسودة">مسودة</option>
-                        <option value="معتمدة">معتمدة</option>
-                        <option value="مسددة">مسددة</option>
-                        <option value="ملغاة">ملغاة</option>
-                    </select>
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <FaFilter className="text-gray-400" />
+                    <div className="flex flex-wrap gap-2">
+                        <motion.button
+                            whileHover={{ scale: 1.03 }}
+                            whileTap={{ scale: 0.97 }}
+                            onClick={onAdd}
+                            className="bg-white text-blue-700 px-4 py-2.5 rounded-xl flex items-center font-medium shadow-md hover:shadow-lg transition-shadow"
+                            disabled={loading}
+                        >
+                            <FaPlus className="ml-2" /> {loading ? 'جاري التحميل...' : 'إضافة راتب'}
+                        </motion.button>
+                        <motion.button
+                            whileHover={{ scale: 1.03 }}
+                            whileTap={{ scale: 0.97 }}
+                            onClick={onRefresh}
+                            className="bg-indigo-800 hover:bg-indigo-900 text-white px-4 py-2.5 rounded-xl flex items-center font-medium shadow-md hover:shadow-lg transition-shadow"
+                            disabled={loading}
+                        >
+                            <FaSync className={`ml-2 ${loading ? 'animate-spin' : ''}`} /> تحديث
+                        </motion.button>
                     </div>
                 </div>
             </div>
 
-            <div className="overflow-x-auto rounded-lg border border-gray-200">
-                <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50">
-                        {table.getHeaderGroups().map((headerGroup) => (
-                            <tr key={headerGroup.id}>
-                                {headerGroup.headers.map((header) => (
-                                    <th
-                                        key={header.id}
-                                        className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider"
-                                    >
-                                        {flexRender(header.column.columnDef.header, header.getContext())}
-                                    </th>
-                                ))}
-                            </tr>
-                        ))}
-                    </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
-                        {table.getRowModel().rows.length > 0 ? (
-                            table.getRowModel().rows.map((row) => (
-                                <tr key={row.id} className="hover:bg-gray-50 transition-colors">
-                                    {row.getVisibleCells().map((cell) => (
-                                        <td key={cell.id} className="px-6 py-4 whitespace-nowrap">
-                                            {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                                        </td>
+            <div className="p-6">
+                <div className="mb-6 flex flex-col md:flex-row gap-4">
+                    <div className="relative flex-grow">
+                        <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                            <FaSearch className="text-gray-400" />
+                        </div>
+                        <input
+                            placeholder="ابحث عن راتب..."
+                            className="pr-10 pl-4 py-3 border border-gray-300 rounded-xl w-full focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                            onChange={(e) => table.setGlobalFilter(e.target.value)}
+                            disabled={loading}
+                        />
+                    </div>
+
+                    <div className="relative min-w-[180px]">
+                        <select
+                            className="appearance-none pl-10 pr-4 py-3 border border-gray-300 rounded-xl w-full focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            onChange={(e) => {
+                                const column = table.getColumn('status');
+                                if (e.target.value === 'all') {
+                                    column.setFilterValue(undefined);
+                                } else {
+                                    column.setFilterValue(e.target.value);
+                                }
+                            }}
+                            disabled={loading}
+                        >
+                            <option value="all">جميع الحالات</option>
+                            <option value="مسودة">مسودة</option>
+                            <option value="معتمدة">معتمدة</option>
+                            <option value="مسددة">مسددة</option>
+                            <option value="ملغاة">ملغاة</option>
+                        </select>
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <FaFilter className="text-gray-400" />
+                        </div>
+                    </div>
+                </div>
+
+                <div className="overflow-x-auto rounded-xl border border-gray-200 shadow-inner">
+                    <table className="min-w-full divide-y divide-gray-200">
+                        <thead className="bg-gray-50">
+                            {table.getHeaderGroups().map((headerGroup) => (
+                                <tr key={headerGroup.id}>
+                                    {headerGroup.headers.map((header) => (
+                                        <th
+                                            key={header.id}
+                                            className="px-6 py-3 text-right text-xs font-medium text-gray-700 uppercase tracking-wider bg-gray-100"
+                                        >
+                                            {flexRender(header.column.columnDef.header, header.getContext())}
+                                        </th>
                                     ))}
                                 </tr>
-                            ))
-                        ) : (
-                            <tr>
-                                <td colSpan={columns.length} className="px-6 py-4 text-center text-gray-500">
-                                    {loading ? 'جاري تحميل البيانات...' : 'لا توجد بيانات متاحة'}
-                                </td>
-                            </tr>
-                        )}
-                    </tbody>
-                </table>
-            </div>
-
-            <div className="flex flex-col md:flex-row items-center justify-between mt-4 gap-4">
-                <div className="flex items-center gap-2">
-                    <button
-                        className="px-3 py-1 border border-gray-300 rounded-md disabled:opacity-50 hover:bg-gray-100 transition-colors"
-                        onClick={() => table.setPageIndex(0)}
-                        disabled={!table.getCanPreviousPage()}
-                        aria-label="الصفحة الأولى"
-                    >
-                        <span className="sr-only">الصفحة الأولى</span>
-                        <FaChevronLeft className="transform rotate-180" />
-                        <FaChevronLeft className="transform rotate-180 -ml-1" />
-                    </button>
-                    <button
-                        className="px-3 py-1 border border-gray-300 rounded-md disabled:opacity-50 hover:bg-gray-100 transition-colors"
-                        onClick={() => table.previousPage()}
-                        disabled={!table.getCanPreviousPage()}
-                        aria-label="الصفحة السابقة"
-                    >
-                        <FaChevronLeft className="transform rotate-180" />
-                    </button>
-                    <button
-                        className="px-3 py-1 border border-gray-300 rounded-md disabled:opacity-50 hover:bg-gray-100 transition-colors"
-                        onClick={() => table.nextPage()}
-                        disabled={!table.getCanNextPage()}
-                        aria-label="الصفحة التالية"
-                    >
-                        <FaChevronRight className="transform rotate-180" />
-                    </button>
-                    <button
-                        className="px-3 py-1 border border-gray-300 rounded-md disabled:opacity-50 hover:bg-gray-100 transition-colors"
-                        onClick={() => table.setPageIndex(table.getPageCount() - 1)}
-                        disabled={!table.getCanNextPage()}
-                        aria-label="الصفحة الأخيرة"
-                    >
-                        <span className="sr-only">الصفحة الأخيرة</span>
-                        <FaChevronRight className="transform rotate-180" />
-                        <FaChevronRight className="transform rotate-180 -ml-1" />
-                    </button>
+                            ))}
+                        </thead>
+                        <tbody className="bg-white divide-y divide-gray-200">
+                            {loading ? (
+                                <tr>
+                                    <td colSpan={columns.length} className="px-6 py-12 text-center">
+                                        <div className="flex justify-center">
+                                            <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-blue-500"></div>
+                                        </div>
+                                        <p className="mt-4 text-gray-600">جاري تحميل بيانات الرواتب...</p>
+                                    </td>
+                                </tr>
+                            ) : table.getRowModel().rows.length === 0 ? (
+                                <tr>
+                                    <td colSpan={columns.length} className="px-6 py-12 text-center text-gray-500">
+                                        <FaFileAlt className="mx-auto text-3xl text-gray-300 mb-3" />
+                                        <p className="text-gray-600">لا توجد بيانات متاحة</p>
+                                        <button
+                                            onClick={onAdd}
+                                            className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                                        >
+                                            إضافة راتب جديد
+                                        </button>
+                                    </td>
+                                </tr>
+                            ) : (
+                                table.getRowModel().rows.map((row) => (
+                                    <motion.tr
+                                        key={row.id}
+                                        className="hover:bg-gray-50"
+                                        initial={{ opacity: 0 }}
+                                        animate={{ opacity: 1 }}
+                                        transition={{ duration: 0.3 }}
+                                    >
+                                        {row.getVisibleCells().map((cell) => (
+                                            <td key={cell.id} className="px-6 py-4 whitespace-nowrap">
+                                                {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                                            </td>
+                                        ))}
+                                    </motion.tr>
+                                ))
+                            )}
+                        </tbody>
+                    </table>
                 </div>
 
-                <div className="flex items-center gap-4">
-                    <span className="text-sm text-gray-700">
-                        الصفحة {table.getState().pagination.pageIndex + 1} من {table.getPageCount()}
-                    </span>
-
+                <div className="flex flex-col sm:flex-row items-center justify-between mt-6 gap-4">
                     <div className="flex items-center gap-2">
-                        <span className="text-sm text-gray-700">عدد الصفوف:</span>
+                        <span className="text-sm text-gray-700">
+                            عرض
+                        </span>
                         <select
-                            className="border border-gray-300 rounded-md px-2 py-1 text-sm"
                             value={table.getState().pagination.pageSize}
-                            onChange={(e) => {
-                                table.setPageSize(Number(e.target.value));
-                            }}
+                            onChange={e => table.setPageSize(Number(e.target.value))}
+                            className="px-3 py-1.5 border border-gray-300 rounded-lg bg-white text-sm"
                         >
-                            {[5, 10, 20, 30, 40, 50].map((pageSize) => (
+                            {[5, 10, 20, 30].map(pageSize => (
                                 <option key={pageSize} value={pageSize}>
                                     {pageSize}
                                 </option>
                             ))}
                         </select>
+                        <span className="text-sm text-gray-700">
+                            صفوف
+                        </span>
+                    </div>
+
+                    <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-2">
+                            <motion.button
+                                whileHover={{ scale: 1.05 }}
+                                whileTap={{ scale: 0.95 }}
+                                className="p-2 rounded-full bg-gray-100 hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                                onClick={() => table.previousPage()}
+                                disabled={!table.getCanPreviousPage()}
+                            >
+                                <FaChevronLeft className="text-gray-600" />
+                            </motion.button>
+
+                            <span className="text-sm text-gray-700 min-w-[100px] text-center">
+                                الصفحة {table.getState().pagination.pageIndex + 1} من {table.getPageCount()}
+                            </span>
+
+                            <motion.button
+                                whileHover={{ scale: 1.05 }}
+                                whileTap={{ scale: 0.95 }}
+                                className="p-2 rounded-full bg-gray-100 hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                                onClick={() => table.nextPage()}
+                                disabled={!table.getCanNextPage()}
+                            >
+                                <FaChevronRight className="text-gray-600" />
+                            </motion.button>
+                        </div>
+
+                        <div className="bg-blue-50 rounded-lg px-3 py-1.5">
+                            <span className="text-blue-700 font-medium text-sm">
+                                {data.length} راتب
+                            </span>
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
+        </motion.div>
     );
 };
 
-export default SalariesTable
+export default SalariesTable;

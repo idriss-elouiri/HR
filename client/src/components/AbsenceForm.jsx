@@ -12,7 +12,7 @@ import {
     FaClock
 } from 'react-icons/fa';
 import dynamic from 'next/dynamic';
-// Fix 1: Use dynamic import for DatePicker
+
 const DatePicker = dynamic(
     () => import('react-datepicker').then(mod => mod.default),
     {
@@ -142,194 +142,226 @@ const AbsenceForm = ({ absence, onSuccess, onCancel }) => {
     if (isLoading) return <div className="text-center py-8">جاري التحميل...</div>;
 
     return (
-        <form onSubmit={formik.handleSubmit} className="p-6">
-            <h2 className="text-xl font-bold mb-4 border-b pb-2">
-                {absence ? 'تعديل بيانات الغياب' : 'إضافة غياب جديد'}
-            </h2>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                        الموظف
-                    </label>
-                    <select
-                        name="employee"
-                        value={formik.values.employee}
-                        onChange={formik.handleChange}
-                        onBlur={formik.handleBlur}
-                        className={inputClass(formik.touched.employee, formik.errors.employee)}
-                        disabled={!!absence}
-                    >
-                        <option value="">اختر الموظف</option>
-                        {employees.map(emp => (
-                            <option key={emp._id} value={emp._id}>
-                                {emp.fullName} - {emp.employeeId}
-                            </option>
-                        ))}
-                    </select>
-                    {formik.touched.employee && formik.errors.employee && (
-                        <p className="mt-1 text-sm text-red-600 flex items-center">
-                            <FaInfoCircle className="ml-1" /> {formik.errors.employee}
-                        </p>
-                    )}
-                </div>
-
-                <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                        نوع الغياب
-                    </label>
-                    <select
-                        name="type"
-                        value={formik.values.type}
-                        onChange={formik.handleChange}
-                        onBlur={formik.handleBlur}
-                        className={inputClass(formik.touched.type, formik.errors.type)}
-                    >
-                        {absenceTypes.map(type => (
-                            <option key={type.value} value={type.value}>
-                                {type.label}
-                            </option>
-                        ))}
-                    </select>
-                    {formik.touched.type && formik.errors.type && (
-                        <p className="mt-1 text-sm text-red-600 flex items-center">
-                            <FaInfoCircle className="ml-1" /> {formik.errors.type}
-                        </p>
-                    )}
-                </div>
-
-                <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                        تاريخ الغياب
-                    </label>
-                    <div className="relative">
-                        {isDatePickerLoaded && (
-                            <DatePicker
-                                selected={formik.values.date}
-                                onChange={(date) => formik.setFieldValue('date', date)}
-                                dateFormat="yyyy/MM/dd"
-                                className={inputClass(formik.touched.date, formik.errors.date)}
-                            />
-                        )}
-                        <FaCalendarAlt className="absolute left-3 top-3.5 text-gray-400" />
+        <form onSubmit={formik.handleSubmit} className="bg-white rounded-xl shadow-lg overflow-hidden">
+            <div className="p-6 bg-gradient-to-r from-blue-600 to-indigo-700 text-white">
+                <h2 className="text-2xl font-bold flex items-center gap-2">
+                    <div className="bg-white/20 p-2 rounded-lg">
+                        <FaUser />
                     </div>
-                    {formik.touched.date && formik.errors.date && (
-                        <p className="mt-1 text-sm text-red-600 flex items-center">
-                            <FaInfoCircle className="ml-1" /> {formik.errors.date}
-                        </p>
-                    )}
-                </div>
+                    {absence ? 'تعديل بيانات الغياب' : 'إضافة غياب جديد'}
+                </h2>
+            </div>
 
-                {formik.values.type !== 'غياب كامل' && (
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                            المدة (ساعات)
+            <div className="p-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+                    {/* تحسين حقل الموظف */}
+                    <div className="space-y-1">
+                        <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-1">
+                            <FaUser className="text-blue-600" /> الموظف
                         </label>
-                        <div className="relative">
-                            <input
-                                type="number"
-                                name="duration"
-                                value={formik.values.duration}
-                                onChange={formik.handleChange}
-                                onBlur={formik.handleBlur}
-                                min="0.1"
-                                max="24"
-                                step="0.1"
-                                className={inputClass(formik.touched.duration, formik.errors.duration)}
-                                placeholder="أدخل المدة..."
-                            />
-                            <FaClock className="absolute left-3 top-3.5 text-gray-400" />
-                        </div>
-                        {formik.touched.duration && formik.errors.duration && (
+                        <select
+                            name="employee"
+                            className={`w-full p-3 rounded-lg border focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all ${formik.touched.employee && formik.errors.employee
+                                ? 'border-red-500 ring-1 ring-red-500'
+                                : 'border-gray-300 hover:border-blue-400'
+                                } bg-gray-50`}
+                            value={formik.values.employee}
+                            onChange={formik.handleChange}
+                            onBlur={formik.handleBlur}
+                            disabled={!!absence}
+                        >
+                            <option value="">اختر الموظف</option>
+                            {employees.map(emp => (
+                                <option key={emp._id} value={emp._id}>
+                                    {emp.fullName} - {emp.employeeId}
+                                </option>
+                            ))}
+                        </select>
+                        {formik.touched.employee && formik.errors.employee && (
                             <p className="mt-1 text-sm text-red-600 flex items-center">
-                                <FaInfoCircle className="ml-1" /> {formik.errors.duration}
+                                <FaInfoCircle className="ml-1" /> {formik.errors.employee}
                             </p>
                         )}
                     </div>
-                )}
 
-                <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                        حالة الغياب
-                    </label>
-                    <select
-                        name="status"
-                        value={formik.values.status}
-                        onChange={formik.handleChange}
-                        onBlur={formik.handleBlur}
-                        className={inputClass(formik.touched.status, formik.errors.status)}
+
+                    {/* تحسين حقل نوع الغياب */}
+                    <div className="space-y-1">
+                        <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-1">
+                            <div className="w-4 h-4 rounded-full bg-blue-600"></div> نوع الغياب
+                        </label>
+                        <select
+                            name="type"
+                            className={`w-full p-3 rounded-lg border focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all ${formik.touched.type && formik.errors.type
+                                ? 'border-red-500 ring-1 ring-red-500'
+                                : 'border-gray-300 hover:border-blue-400'
+                                } bg-gray-50`}
+                            value={formik.values.type}
+                            onChange={formik.handleChange}
+                            onBlur={formik.handleBlur}
+                        >
+                            {absenceTypes.map(type => (
+                                <option key={type.value} value={type.value}>
+                                    {type.label}
+                                </option>
+                            ))}
+                        </select>
+                        {formik.touched.type && formik.errors.type && (
+                            <p className="mt-1 text-sm text-red-600 flex items-center">
+                                <FaInfoCircle className="ml-1" /> {formik.errors.type}
+                            </p>
+                        )}
+
+                    </div>
+
+                    <div className="space-y-1">
+                        <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-1">
+                            <FaCalendarAlt className="text-blue-600" /> تاريخ الغياب
+                        </label>
+                        <div className="relative">
+                            {isDatePickerLoaded && (
+                                <DatePicker
+                                    selected={formik.values.date}
+                                    onChange={(date) => formik.setFieldValue('date', date)}
+                                    dateFormat="yyyy/MM/dd"
+                                    className={`w-full p-3 rounded-lg border focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all ${formik.touched.date && formik.errors.date
+                                        ? 'border-red-500 ring-1 ring-red-500'
+                                        : 'border-gray-300 hover:border-blue-400'
+                                        } bg-gray-50`}
+                                />
+                            )}
+                            <FaCalendarAlt className="absolute left-3 top-3.5 text-gray-400 pointer-events-none" />
+                        </div>
+                        {formik.touched.date && formik.errors.date && (
+                            <p className="mt-1 text-sm text-red-600 flex items-center">
+                                <FaInfoCircle className="ml-1" /> {formik.errors.date}
+                            </p>
+                        )}
+                    </div>
+
+                    {formik.values.type !== 'غياب كامل' && (
+                        <div className="space-y-1">
+                            <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-1">
+                                <FaClock className="text-blue-600" /> المدة (ساعات)
+                            </label>
+                            <div className="relative">
+                                <input
+                                    type="number"
+                                    name="duration"
+                                    className={`w-full p-3 rounded-lg border focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all ${formik.touched.duration && formik.errors.duration
+                                        ? 'border-red-500 ring-1 ring-red-500'
+                                        : 'border-gray-300 hover:border-blue-400'
+                                        } bg-gray-50`}
+                                    value={formik.values.duration}
+                                    onChange={formik.handleChange}
+                                    onBlur={formik.handleBlur}
+                                    min="0.1"
+                                    max="24"
+                                    step="0.1"
+                                    placeholder="أدخل المدة..."
+                                />
+                                <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                                    <FaClock className="text-gray-400" />
+                                </div>
+                            </div>
+                            {formik.touched.duration && formik.errors.duration && (
+                                <p className="mt-1 text-sm text-red-600 flex items-center">
+                                    <FaInfoCircle className="ml-1" /> {formik.errors.duration}
+                                </p>
+                            )}
+                        </div>
+                    )}
+
+                    <div className="space-y-1">
+                        <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-1">
+                            <div className="w-2 h-2 rounded-full bg-blue-600"></div> حالة الغياب
+                        </label>
+                        <select
+                            name="status"
+                            className={`w-full p-3 rounded-lg border focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all ${formik.touched.status && formik.errors.status
+                                ? 'border-red-500 ring-1 ring-red-500'
+                                : 'border-gray-300 hover:border-blue-400'
+                                } bg-gray-50`}
+                            value={formik.values.status}
+                            onChange={formik.handleChange}
+                            onBlur={formik.handleBlur}
+                        >
+                            {statusOptions.map(status => (
+                                <option key={status.value} value={status.value}>
+                                    {status.label}
+                                </option>
+                            ))}
+                        </select>
+                        {formik.touched.status && formik.errors.status && (
+                            <p className="mt-1 text-sm text-red-600 flex items-center">
+                                <FaInfoCircle className="ml-1" /> {formik.errors.status}
+                            </p>
+                        )}
+                    </div>
+
+                    <div className="md:col-span-2 space-y-1">
+                        <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-1">
+                            <FaInfoCircle className="text-blue-600" /> سبب الغياب
+                        </label>
+                        <textarea
+                            name="reason"
+                            rows="3"
+                            className={`w-full p-3 rounded-lg border focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all ${formik.touched.reason && formik.errors.reason
+                                ? 'border-red-500 ring-1 ring-red-500'
+                                : 'border-gray-300 hover:border-blue-400'
+                                } bg-gray-50`}
+                            value={formik.values.reason}
+                            onChange={formik.handleChange}
+                            onBlur={formik.handleBlur}
+                            placeholder="أدخل سبب الغياب..."
+                        ></textarea>
+                        {formik.touched.reason && formik.errors.reason && (
+                            <p className="mt-1 text-sm text-red-600 flex items-center">
+                                <FaInfoCircle className="ml-1" /> {formik.errors.reason}
+                            </p>
+                        )}
+                    </div>
+
+                    <div className="md:col-span-2 space-y-1">
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                            ملاحظات (اختياري)
+                        </label>
+                        <textarea
+                            name="notes"
+                            rows="2"
+                            className="w-full p-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-gray-50 hover:border-blue-400 transition-all"
+                            value={formik.values.notes}
+                            onChange={formik.handleChange}
+                            placeholder="أدخل أي ملاحظات..."
+                        ></textarea>
+                    </div>
+                </div>
+
+                <div className="flex flex-col sm:flex-row justify-end gap-3 mt-8 pt-6 border-t border-gray-100">
+                    <button
+                        type="button"
+                        onClick={onCancel}
+                        className="px-6 py-3 flex items-center justify-center gap-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors hover:border-red-500 hover:text-red-600 font-medium"
                     >
-                        {statusOptions.map(status => (
-                            <option key={status.value} value={status.value}>
-                                {status.label}
-                            </option>
-                        ))}
-                    </select>
-                    {formik.touched.status && formik.errors.status && (
-                        <p className="mt-1 text-sm text-red-600 flex items-center">
-                            <FaInfoCircle className="ml-1" /> {formik.errors.status}
-                        </p>
-                    )}
+                        <FaTimes /> إلغاء
+                    </button>
+                    <button
+                        type="submit"
+                        disabled={isSubmitting}
+                        className="px-6 py-3 flex items-center justify-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-700 text-white rounded-lg hover:from-blue-700 hover:to-indigo-800 transition-all shadow-md hover:shadow-lg font-medium disabled:opacity-70"
+                    >
+                        {isSubmitting ? (
+                            <>
+                                <FaSync className="animate-spin" /> جاري الحفظ...
+                            </>
+                        ) : (
+                            <>
+                                <FaSave /> {absence ? 'تحديث' : 'حفظ'}
+                            </>
+                        )}
+                    </button>
                 </div>
-
-                <div className="md:col-span-2">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                        سبب الغياب
-                    </label>
-                    <textarea
-                        name="reason"
-                        value={formik.values.reason}
-                        onChange={formik.handleChange}
-                        onBlur={formik.handleBlur}
-                        rows="3"
-                        className={inputClass(formik.touched.reason, formik.errors.reason)}
-                        placeholder="أدخل سبب الغياب..."
-                    ></textarea>
-                    {formik.touched.reason && formik.errors.reason && (
-                        <p className="mt-1 text-sm text-red-600 flex items-center">
-                            <FaInfoCircle className="ml-1" /> {formik.errors.reason}
-                        </p>
-                    )}
-                </div>
-
-                <div className="md:col-span-2">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                        ملاحظات
-                    </label>
-                    <textarea
-                        name="notes"
-                        value={formik.values.notes}
-                        onChange={formik.handleChange}
-                        rows="2"
-                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                        placeholder="أدخل أي ملاحظات..."
-                    ></textarea>
-                </div>
-            </div>
-
-            <div className="flex justify-end space-x-4 mt-6 pt-4 border-t">
-                <button
-                    type="button"
-                    onClick={onCancel}
-                    className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 flex items-center"
-                >
-                    <FaTimes className="ml-2" /> إلغاء
-                </button>
-                <button
-                    type="submit"
-                    disabled={isSubmitting}
-                    className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center"
-                >
-                    {isSubmitting ? (
-                        <>
-                            <FaSync className="animate-spin ml-2" /> جاري الحفظ...
-                        </>
-                    ) : (
-                        <>
-                            <FaSave className="ml-2" /> {absence ? 'تحديث' : 'حفظ'}
-                        </>
-                    )}
-                </button>
             </div>
         </form>
     );

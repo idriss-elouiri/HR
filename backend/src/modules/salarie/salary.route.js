@@ -17,4 +17,5 @@ router.get("/:id", verifyToken, getSalary);
 router.put("/:id", verifyToken, updateSalary);
 router.delete("/:id", verifyToken, deleteSalary);
 router.get("/:id/payslip", verifyToken, generatePayslip);
+
 export default router;

@@ -1,10 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import {
   Select, SelectItem, Button, Table, TableHeader, TableColumn,
-  TableBody, TableRow, TableCell, Spinner, Pagination
+  TableBody, TableRow, TableCell, Spinner, Pagination, Card, CardBody
 } from "@nextui-org/react";
-import { FaFileExcel, FaFilePdf, FaSearch, FaInfoCircle } from 'react-icons/fa';
-import { toast } from 'react-toastify';
+import { FaFileExcel, FaFilePdf, FaSearch, FaInfoCircle, FaCalendarAlt, FaUser, FaLeaf, FaClock, FaUsers } from 'react-icons/fa';
+import { motion } from 'framer-motion';
 
 const months = [
   { label: "يناير", value: "1" },
@@ -25,23 +25,35 @@ const MonthlyReport = ({ fetchData, apiUrl, currentYear }) => {
   const [month, setMonth] = useState((new Date().getMonth() + 1).toString());
   const [year, setYear] = useState(currentYear.toString());
   const [reportData, setReportData] = useState([]);
-  const [years, setYears] = useState([]);
   const [page, setPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  useEffect(() => {
+  // إصلاح: استخدام useRef لمنع الطلبات المتكررة
+  const lastRequestRef = useRef({ month: '', year: '' });
+
+  const years = useMemo(() => {
     const startYear = 2020;
-    const yearOptions = [];
+    const options = [];
     for (let y = startYear; y <= currentYear + 1; y++) {
-      yearOptions.push(y.toString());
+      options.push(y.toString());
     }
-    setYears(yearOptions);
-    fetchReport();
+    return options;
+  }, [currentYear]);
+
+  useEffect(() => {
+    // إصلاح: التحقق من تغير المعلمات قبل الجلب
+    if (month && year &&
+      (month !== lastRequestRef.current.month || year !== lastRequestRef.current.year)) {
+      fetchReport();
+    }
   }, [month, year]);
 
   const fetchReport = async () => {
+    // تحديث المرجع لمنع الطلبات المتكررة
+    lastRequestRef.current = { month, year };
+
     setIsLoading(true);
     setError(null);
     setReportData([]);
@@ -49,39 +61,78 @@ const MonthlyReport = ({ fetchData, apiUrl, currentYear }) => {
     try {
       const data = await fetchData(`${apiUrl}/api/reports/monthly?month=${month}&year=${year}`);
 
-      if (data && data.success) {
-        setReportData(data.data);
+      if (!data) {
+        throw new Error('لا توجد استجابة من الخادم');
+      }
+
+      if (data.success) {
+        // إصلاح: تحويل البيانات إلى الصيغة المتوقعة
+        const formattedData = data.data.map(item => ({
+          ...item,
+          totalLeaves: item.totalLeaves || 0,
+          totalAbsences: item.totalAbsences || 0,
+          totalHours: item.totalHours || 0
+        }));
+        setReportData(formattedData);
       } else {
-        setError('فشل في جلب البيانات من الخادم');
+        setError(data.message || 'فشل في جلب البيانات من الخادم');
       }
     } catch (err) {
-      setError('حدث خطأ أثناء جلب البيانات');
-      console.error('Fetch error:', err);
+      setError(err.message || 'حدث خطأ أثناء جلب البيانات');
     } finally {
       setIsLoading(false);
     }
   };
 
+  useEffect(() => {
+    if (month && year) {
+      fetchReport();
+    }
+  }, [fetchReport, month, year]);
+
+  // في MonthlyReport.js
+  const stats = useMemo(() => ({
+    totalEmployees: reportData.length,
+    totalLeaves: reportData.reduce((sum, item) => sum + (item.totalLeaves || 0), 0),
+    totalHours: reportData.reduce((sum, item) => sum + (item.totalHours || 0), 0),
+    totalAbsences: reportData.reduce((sum, item) => sum + (item.totalAbsences || 0), 0)
+  }), [reportData]);
+
   const handleExport = (format) => {
-    toast.info(`سيتم تصدير التقرير الشهري كـ ${format} قريباً`);
+    alert(`سيتم تصدير التقرير الشهري كـ ${format} قريباً`);
   };
 
   const paginatedData = reportData.slice(
     (page - 1) * rowsPerPage,
     page * rowsPerPage
   );
-  { console.log('Report Data:', reportData) }
-  { console.log('Paginated Data:', paginatedData) }
+
+  // إحصائيات التقرير
+  const totalEmployees = reportData.length;
+  const totalLeaves = reportData.reduce((sum, item) => sum + (item.totalLeaves || 0), 0);
+  const totalHours = reportData.reduce((sum, item) => sum + (item.totalHours || 0), 0);
+  const totalAbsences = reportData.reduce((sum, item) => sum + (item.totalAbsences || 0), 0);
+
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col md:flex-row gap-4 items-end md:items-center">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 w-full md:w-auto">
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      className="space-y-6"
+    >
+      <div className="flex flex-col md:flex-row gap-4 items-end md:items-center justify-between p-4 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-2xl border border-indigo-100">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 w-full">
           <Select
             label="الشهر"
+            labelPlacement="outside"
             value={month}
             onChange={(e) => setMonth(e.target.value)}
             className="max-w-xs"
             isDisabled={isLoading}
+            classNames={{
+              trigger: "bg-white border border-indigo-200 shadow-sm",
+              label: "font-medium text-indigo-700"
+            }}
+            startContent={<FaCalendarAlt className="text-indigo-500" />}
           >
             {months.map((m) => (
               <SelectItem key={m.value} value={m.value}>
@@ -92,12 +143,18 @@ const MonthlyReport = ({ fetchData, apiUrl, currentYear }) => {
 
           <Select
             label="السنة"
+            labelPlacement="outside"
             value={year}
             onChange={(e) => setYear(e.target.value)}
             className="max-w-xs"
             isDisabled={isLoading}
+            classNames={{
+              trigger: "bg-white border border-indigo-200 shadow-sm",
+              label: "font-medium text-indigo-700"
+            }}
+            startContent={<FaCalendarAlt className="text-indigo-500" />}
           >
-            {years.map((y) => (
+            {years.map((y) => ( // استخدام المتغير years مباشرة
               <SelectItem key={y} value={y}>
                 {y}
               </SelectItem>
@@ -107,16 +164,17 @@ const MonthlyReport = ({ fetchData, apiUrl, currentYear }) => {
           <Button
             color="primary"
             onClick={fetchReport}
-            className="h-14"
+            className="h-14 bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-md"
             isDisabled={isLoading}
+            endContent={<FaSearch className="ml-2" />}
           >
-            <FaSearch className="ml-2" /> بحث
+            بحث
           </Button>
         </div>
 
-        <div className="flex gap-2 ml-auto">
+        <div className="flex gap-2">
           <Button
-            color="success"
+            className="bg-gradient-to-r from-green-600 to-emerald-600 text-white shadow-md"
             startContent={<FaFileExcel />}
             onClick={() => handleExport('Excel')}
             isDisabled={reportData.length === 0 || isLoading}
@@ -124,7 +182,7 @@ const MonthlyReport = ({ fetchData, apiUrl, currentYear }) => {
             تصدير Excel
           </Button>
           <Button
-            color="danger"
+            className="bg-gradient-to-r from-red-600 to-rose-600 text-white shadow-md"
             startContent={<FaFilePdf />}
             onClick={() => handleExport('PDF')}
             isDisabled={reportData.length === 0 || isLoading}
@@ -134,90 +192,173 @@ const MonthlyReport = ({ fetchData, apiUrl, currentYear }) => {
         </div>
       </div>
 
-      {isLoading ? (
-        <div className="flex justify-center py-10">
-          <Spinner size="lg" color="primary" />
-          <span className="mr-2">جاري تحميل البيانات...</span>
-        </div>
-      ) : error ? (
-        <div className="text-center py-10 text-red-600">
-          <FaInfoCircle className="text-3xl mx-auto mb-3" />
-          <h3 className="text-xl font-semibold mb-2">حدث خطأ</h3>
-          <p className="mb-4">{error}</p>
-          <Button color="primary" onClick={fetchReport}>
-            المحاولة مرة أخرى
-          </Button>
-        </div>
-      ) : reportData.length > 0 ? (
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">رقم الموظف</th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">اسم الموظف</th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">القسم</th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">إجازات (يوم)</th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">غياب (مرة)</th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">ساعات غياب</th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {paginatedData.map((item) => (
-                <tr key={item._id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap">{item.employeeId || '--'}</td>
-                  <td className="px-6 py-4 whitespace-nowrap font-medium">{item.fullName || '--'}</td>
-                  <td className="px-6 py-4 whitespace-nowrap">{item.department || '--'}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-center">{item.totalLeaves || 0}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-center">{item.totalAbsences || 0}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-center">{item.totalHours || 0}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+      {/* إحصائيات سريعة */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <Card className="bg-gradient-to-r from-indigo-500 to-indigo-600 text-white rounded-xl shadow-lg">
+          <CardBody className="flex flex-row items-center p-4">
+            <div className="bg-white/20 p-3 rounded-full mr-3">
+              <FaUsers className="text-xl" />
+            </div>
+            <div>
+              <p className="text-sm opacity-80">الموظفين</p>
+              <p className="text-2xl font-bold">{totalEmployees}</p>
+            </div>
+          </CardBody>
+        </Card>
 
+        <Card className="bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl shadow-lg">
+          <CardBody className="flex flex-row items-center p-4">
+            <div className="bg-white/20 p-3 rounded-full mr-3">
+              <FaLeaf className="text-xl" />
+            </div>
+            <div>
+              <p className="text-sm opacity-80">إجمالي الإجازات</p>
+              <p className="text-2xl font-bold">{totalLeaves}</p>
+            </div>
+          </CardBody>
+        </Card>
 
-          <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="bg-blue-50 p-4 rounded-lg text-center">
-              <div className="text-blue-800 font-bold">إجمالي الموظفين</div>
-              <div className="text-2xl font-bold">{reportData.length}</div>
+        <Card className="bg-gradient-to-r from-purple-500 to-purple-600 text-white rounded-xl shadow-lg">
+          <CardBody className="flex flex-row items-center p-4">
+            <div className="bg-white/20 p-3 rounded-full mr-3">
+              <FaInfoCircle className="text-xl" />
             </div>
-            <div className="bg-green-50 p-4 rounded-lg text-center">
-              <div className="text-green-800 font-bold">إجمالي أيام الإجازات</div>
-              <div className="text-2xl font-bold">
-                {reportData.reduce((sum, item) => sum + (item.totalLeaves || 0), 0)}
-              </div>
+            <div>
+              <p className="text-sm opacity-80">إجمالي الغياب</p>
+              <p className="text-2xl font-bold">{totalAbsences}</p>
             </div>
-            <div className="bg-red-50 p-4 rounded-lg text-center">
-              <div className="text-red-800 font-bold">إجمالي ساعات الغياب</div>
-              <div className="text-2xl font-bold">
-                {reportData.reduce((sum, item) => sum + (item.totalHours || 0), 0)}
-              </div>
+          </CardBody>
+        </Card>
+
+        <Card className="bg-gradient-to-r from-amber-500 to-amber-600 text-white rounded-xl shadow-lg">
+          <CardBody className="flex flex-row items-center p-4">
+            <div className="bg-white/20 p-3 rounded-full mr-3">
+              <FaClock className="text-xl" />
             </div>
-          </div>
-        </div>
-      ) : (
+            <div>
+              <p className="text-sm opacity-80">إجمالي الساعات</p>
+              <p className="text-2xl font-bold">{totalHours}</p>
+            </div>
+          </CardBody>
+        </Card>
+      </div>
+      {reportData.length === 0 && !isLoading && !error && (
         <div className="text-center py-10">
-          <div className="inline-block p-6 bg-blue-50 rounded-full mb-4">
-            <FaInfoCircle className="text-blue-500 text-4xl" />
-          </div>
-          <h3 className="text-xl font-semibold text-gray-700 mb-2">
-            لا توجد بيانات متاحة للشهر والسنة المحددين
-          </h3>
-          <p className="text-gray-500 max-w-md mx-auto">
-            لم يتم العثور على أي بيانات للإجازات أو الغياب المعتمدة للشهر والسنة المحددين.
-            الرجاء التأكد من اختيار الشهر والسنة الصحيحين.
+          <FaInfoCircle className="mx-auto text-4xl text-indigo-500 mb-4" />
+          <p className="text-lg font-medium text-gray-600">
+            لا توجد بيانات متاحة للعرض
           </p>
-          <Button
-            color="primary"
-            className="mt-4"
-            onClick={fetchReport}
-          >
-            <FaSearch className="ml-2" /> المحاولة مرة أخرى
-          </Button>
         </div>
       )}
-    </div>
+      {isLoading ? (
+        <Card className="rounded-2xl shadow-lg">
+          <CardBody className="flex flex-col items-center justify-center py-16">
+            <Spinner
+              size="lg"
+              classNames={{
+                circle1: "border-b-indigo-600",
+                circle2: "border-b-indigo-600",
+              }}
+            />
+            <span className="mt-4 text-lg text-gray-600 font-medium">جاري تحميل التقرير الشهري...</span>
+          </CardBody>
+        </Card>
+      ) : error ? (
+        <Card className="rounded-2xl shadow-lg bg-gradient-to-br from-red-50 to-rose-50 border border-red-100">
+          <CardBody className="text-center py-12">
+            <div className="inline-block p-4 bg-red-100 rounded-full mb-4">
+              <FaInfoCircle className="text-red-600 text-3xl" />
+            </div>
+            <h3 className="text-xl font-semibold text-red-800 mb-2">حدث خطأ</h3>
+            <p className="mb-6 max-w-md mx-auto text-red-700">{error}</p>
+            <Button
+              color="primary"
+              onClick={fetchReport}
+              className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white"
+            >
+              المحاولة مرة أخرى
+            </Button>
+          </CardBody>
+        </Card>
+      ) : reportData.length > 0 ? (
+        <Card className="rounded-2xl shadow-xl overflow-hidden">
+          <CardBody className="p-0">
+            <Table
+              aria-label="التقرير الشهري"
+              className="min-w-full"
+              classNames={{
+                wrapper: "rounded-none",
+                th: "bg-gradient-to-r from-indigo-700 to-purple-700 text-white text-center",
+                td: "text-center",
+                tr: "hover:bg-indigo-50 transition-colors"
+              }}
+              bottomContent={
+                <div className="flex w-full justify-center p-4">
+                  <Pagination
+                    isCompact
+                    showControls
+                    showShadow
+                    color="primary"
+                    page={page}
+                    total={Math.ceil(reportData.length / rowsPerPage)}
+                    onChange={(newPage) => setPage(newPage)}
+                    classNames={{
+                      item: "bg-white",
+                      cursor: "bg-gradient-to-r from-indigo-600 to-purple-600"
+                    }}
+                  />
+                </div>
+              }
+            >
+              <TableHeader>
+                <TableColumn>رقم الموظف</TableColumn>
+                <TableColumn>اسم الموظف</TableColumn>
+                <TableColumn>القسم</TableColumn>
+                <TableColumn>إجازات (يوم)</TableColumn>
+                <TableColumn>غياب (مرة)</TableColumn>
+                <TableColumn>ساعات غياب</TableColumn>
+              </TableHeader>
+              <TableBody>
+                {paginatedData.map((item) => (
+                  <TableRow key={item._id}>
+                    <TableCell>{item.employeeId}</TableCell>
+                    <TableCell>{item.fullName}</TableCell>
+                    <TableCell>{item.department}</TableCell>
+                    <TableCell>{item.totalLeaves}</TableCell>
+                    <TableCell>{item.totalAbsences}</TableCell>
+                    <TableCell>{item.totalHours}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardBody>
+        </Card>
+      ) : (
+        <Card className="rounded-2xl shadow-lg bg-gradient-to-br from-indigo-50 to-blue-50 border border-indigo-100">
+          <CardBody className="text-center py-16">
+            <div className="inline-block p-5 bg-indigo-100 rounded-full mb-5">
+              <FaInfoCircle className="text-indigo-600 text-4xl" />
+            </div>
+            <h3 className="text-2xl font-bold text-indigo-800 mb-3">
+              لا توجد بيانات متاحة للشهر والسنة المحددين
+            </h3>
+            <p className="text-gray-600 max-w-md mx-auto mb-6">
+              لم يتم العثور على أي بيانات للإجازات أو الغياب المعتمدة للشهر والسنة المحددين.
+              الرجاء التأكد من اختيار الشهر والسنة الصحيحين.
+            </p>
+            <Button
+              color="primary"
+              className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white"
+              onClick={fetchReport}
+              startContent={<FaSearch />}
+            >
+              المحاولة مرة أخرى
+            </Button>
+          </CardBody>
+        </Card>
+      )}
+    </motion.div>
   );
 };
 
-export default MonthlyReport
+export default MonthlyReport;

@@ -1,8 +1,7 @@
 // controllers/report.controller.js
-import Absence from "../absence/Absence.model.js";
-import Leave from "../leave/Leave.model.js";
-import Employee from "../employee/employee.models.js";
-import { errorHandler } from "../../utils/error.js";
+import Absence  from "../absence/Absence.model.js";
+import Leave  from "../leave/Leave.model.js";
+import { errorHandler }  from "../../utils/error.js";
 
 export const getMonthlyReport = async (req, res, next) => {
   try {
@@ -14,22 +13,16 @@ export const getMonthlyReport = async (req, res, next) => {
       return next(errorHandler(400, "يجب تحديد الشهر والسنة"));
     }
 
-    const startDate = new Date(yearInt, monthInt - 1, 1);
-    const endDate = new Date(yearInt, monthInt, 0);
+    const startDate = new Date(Date.UTC(yearInt, monthInt - 1, 1));
+    const endDate = new Date(Date.UTC(yearInt, monthInt, 0));
 
-    // تجميع بيانات الإجازات (تم التحديث)
+    // تجميع بيانات الإجازات
     const leaves = await Leave.aggregate([
       {
         $match: {
           $or: [
-            {
-              startDate: { $gte: startDate, $lte: endDate },
-              status: "موافق عليها"
-            },
-            {
-              endDate: { $gte: startDate, $lte: endDate },
-              status: "موافق عليها"
-            }
+            { startDate: { $gte: startDate, $lte: endDate }, status: "موافق عليها" },
+            { endDate: { $gte: startDate, $lte: endDate }, status: "موافق عليها" }
           ]
         }
       },
@@ -60,7 +53,7 @@ export const getMonthlyReport = async (req, res, next) => {
       }
     ]);
 
-    // تجميع بيانات الغياب (تم التحديث)
+    // تجميع بيانات الغياب
     const absences = await Absence.aggregate([
       {
         $match: {
@@ -97,38 +90,43 @@ export const getMonthlyReport = async (req, res, next) => {
       }
     ]);
 
-    // دمج النتائج مع تحسينات
-    const report = [];
+    // دمج النتائج
+    const reportMap = new Map();
 
-    // إضافة بيانات الإجازات
-    leaves.forEach(leave => {
-      report.push({
-        ...leave,
+    // 1. دمج بيانات الإجازات
+    leaves.forEach(employee => {
+      reportMap.set(employee._id.toString(), {
+        ...employee,
         totalAbsences: 0,
         totalHours: 0
       });
     });
 
-    // إضافة بيانات الغياب وتحديث البيانات الموجودة
-    absences.forEach(absence => {
-      const existing = report.find(r => r.employeeId === absence.employeeId);
-      if (existing) {
-        existing.totalAbsences = absence.totalAbsences;
-        existing.totalHours = absence.totalHours;
+    // 2. دمج بيانات الغياب
+    absences.forEach(employee => {
+      const id = employee._id.toString();
+      if (reportMap.has(id)) {
+        const existing = reportMap.get(id);
+        existing.totalAbsences = employee.totalAbsences;
+        existing.totalHours = employee.totalHours;
       } else {
-        report.push({
-          ...absence,
+        reportMap.set(id, {
+          ...employee,
           totalLeaves: 0
         });
       }
     });
+
+    // 3. تحويل الخريطة إلى مصفوفة
+    const report = Array.from(reportMap.values());
 
     res.status(200).json({
       success: true,
       data: report
     });
   } catch (error) {
-    next(error);
+    console.error('Monthly report error:', error);
+    next(errorHandler(500, "حدث خطأ أثناء معالجة التقرير الشهري"));
   }
 };
 
@@ -236,10 +234,15 @@ export const getAnnualReport = async (req, res, next) => {
 
     // دمج التقارير
     const report = leavesReport.map(employee => {
-      const absenceData = absencesReport.find(a => a._id.equals(employee._id)) || {};
+      const absenceData = absencesReport.find(a =>
+        a._id && employee._id && a._id.toString() === employee._id.toString()
+      ) || {};
+
       return {
         ...employee,
-        ...absenceData
+        absences: absenceData.absences || [],
+        totalAbsences: absenceData.totalAbsences || 0,
+        totalHours: absenceData.totalHours || 0
       };
     });
 
@@ -248,6 +251,7 @@ export const getAnnualReport = async (req, res, next) => {
       data: report
     });
   } catch (error) {
-    next(error);
+    console.error('Annual report error:', error);
+    next(errorHandler(500, "حدث خطأ أثناء معالجة التقرير السنوي"));
   }
 };

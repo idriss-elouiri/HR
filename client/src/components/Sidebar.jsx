@@ -1,6 +1,7 @@
 // src/components/Sidebar.js
+'use client';
 import Link from "next/link";
-import React from "react";
+import React, { useState } from "react";
 import { useSelector } from "react-redux";
 import {
     FaTachometerAlt,
@@ -9,83 +10,152 @@ import {
     FaSignOutAlt,
     FaCalendarAlt,
     FaUserClock,
-    FaPlaneDeparture
+    FaPlaneDeparture,
+    FaChevronLeft,
+    FaChevronRight,
+    FaHome,
+    FaChartLine
 } from "react-icons/fa";
-import { MdPeopleAlt } from "react-icons/md";
+import { MdPeopleAlt, MdSettings } from "react-icons/md";
 
 const Sidebar = () => {
     const { currentUser } = useSelector((state) => state.user);
     const isAdmin = currentUser?.isAdmin;
     const isStaff = currentUser?.isStaff;
+    const [collapsed, setCollapsed] = useState(false);
+    const [activeLink, setActiveLink] = useState("");
+
+    const toggleCollapse = () => {
+        setCollapsed(!collapsed);
+    };
+
+    const handleLinkClick = (link) => {
+        setActiveLink(link);
+    };
 
     return (
-        <aside className="w-64 min-h-screen bg-gradient-to-b from-blue-800 to-indigo-800 text-white shadow-xl">
-            <div className="p-6 border-b border-indigo-600 flex items-center gap-3">
-                <div className="bg-white text-blue-800 p-2 rounded-full">
-                    <FaUserTie size={24} />
+        <aside
+            className={`min-h-screen bg-gradient-to-b from-indigo-800 to-indigo-900 text-white shadow-xl transition-all duration-300 ease-in-out ${collapsed ? 'w-20' : 'w-64'}`}
+        >
+            <div className="p-4 border-b border-indigo-700 flex items-center justify-between">
+                <div className={`flex items-center gap-3 transition-opacity ${collapsed ? 'opacity-0 w-0' : 'opacity-100 w-full'}`}>
+                    <div className="bg-gradient-to-r from-amber-500 to-amber-600 p-2 rounded-xl">
+                        <FaUserTie size={24} />
+                    </div>
+                    <h2 className="text-xl font-bold tracking-tight">نظام الموارد البشرية</h2>
                 </div>
-                <h2 className="text-xl font-bold">HR System</h2>
+
+                <button
+                    onClick={toggleCollapse}
+                    className="p-2 rounded-full bg-indigo-700 hover:bg-indigo-600 transition-all"
+                >
+                    {collapsed ? <FaChevronRight /> : <FaChevronLeft />}
+                </button>
             </div>
 
-            <nav className="p-4 space-y-3">
-                {(isAdmin || isStaff) && (
+            <div className="p-4 space-y-1">
                     <Link
                         href="/Dashboard"
-                        className="flex items-center gap-3 py-2 px-4 rounded-lg hover:bg-blue-700 transition"
+                        onClick={() => handleLinkClick("dashboard")}
+                        className={`flex items-center gap-3 py-3 px-4 rounded-xl transition-all group ${activeLink === "dashboard"
+                                ? "bg-gradient-to-r from-amber-500 to-amber-600 shadow-lg"
+                                : "hover:bg-indigo-700"
+                            }`}
                     >
-                        <FaTachometerAlt />
-                        <span>لوحة التحكم</span>
+                        <div className="p-2 rounded-lg bg-white/10 group-hover:bg-white/20 transition">
+                            <FaTachometerAlt size={20} />
+                        </div>
+                        <span className={`${collapsed ? 'hidden' : 'block'}`}>لوحة التحكم</span>
                     </Link>
-                )}
 
                 <Link
                     href="/Employees"
-                    className="flex items-center gap-3 py-2 px-4 rounded-lg hover:bg-blue-700 transition"
+                    onClick={() => handleLinkClick("employees")}
+                    className={`flex items-center gap-3 py-3 px-4 rounded-xl transition-all group ${activeLink === "employees"
+                            ? "bg-gradient-to-r from-blue-500 to-blue-600 shadow-lg"
+                            : "hover:bg-indigo-700"
+                        }`}
                 >
-                    <MdPeopleAlt />
-                    <span>الموظفون</span>
+                    <div className="p-2 rounded-lg bg-white/10 group-hover:bg-white/20 transition">
+                        <MdPeopleAlt size={20} />
+                    </div>
+                    <span className={`${collapsed ? 'hidden' : 'block'}`}>الموظفون</span>
                 </Link>
 
                 <Link
                     href="/Salaries"
-                    className="flex items-center gap-3 py-2 px-4 rounded-lg hover:bg-blue-700 transition"
+                    onClick={() => handleLinkClick("salaries")}
+                    className={`flex items-center gap-3 py-3 px-4 rounded-xl transition-all group ${activeLink === "salaries"
+                            ? "bg-gradient-to-r from-green-500 to-green-600 shadow-lg"
+                            : "hover:bg-indigo-700"
+                        }`}
                 >
-                    <FaBriefcase />
-                    <span>الرواتب المالية</span>
+                    <div className="p-2 rounded-lg bg-white/10 group-hover:bg-white/20 transition">
+                        <FaBriefcase size={18} />
+                    </div>
+                    <span className={`${collapsed ? 'hidden' : 'block'}`}>الرواتب المالية</span>
                 </Link>
 
-                {/* إضافة قسم الإجازات والغياب */}
                 <Link
                     href="/LeavesAbsences"
-                    className="flex items-center gap-3 py-2 px-4 rounded-lg hover:bg-blue-700 transition"
+                    onClick={() => handleLinkClick("leaves")}
+                    className={`flex items-center gap-3 py-3 px-4 rounded-xl transition-all group ${activeLink === "leaves"
+                            ? "bg-gradient-to-r from-purple-500 to-purple-600 shadow-lg"
+                            : "hover:bg-indigo-700"
+                        }`}
                 >
-                    <FaCalendarAlt />
-                    <span>الإجازات والغياب</span>
+                    <div className="p-2 rounded-lg bg-white/10 group-hover:bg-white/20 transition">
+                        <FaCalendarAlt size={18} />
+                    </div>
+                    <span className={`${collapsed ? 'hidden' : 'block'}`}>الإجازات والغياب</span>
                 </Link>
 
                 <Link
                     href="/Reports"
-                    className="flex items-center gap-3 py-2 px-4 rounded-lg hover:bg-blue-700 transition"
+                    onClick={() => handleLinkClick("reports")}
+                    className={`flex items-center gap-3 py-3 px-4 rounded-xl transition-all group ${activeLink === "reports"
+                            ? "bg-gradient-to-r from-pink-500 to-pink-600 shadow-lg"
+                            : "hover:bg-indigo-700"
+                        }`}
                 >
-                    <FaUserClock />
-                    <span>التقارير والإشعارات</span>
+                    <div className="p-2 rounded-lg bg-white/10 group-hover:bg-white/20 transition">
+                        <FaUserClock size={18} />
+                    </div>
+                    <span className={`${collapsed ? 'hidden' : 'block'}`}>التقارير والإشعارات</span>
                 </Link>
 
                 <Link
-                    href="/DepartmentsShifts"
-                    className="flex items-center gap-3 py-2 px-4 rounded-lg hover:bg-blue-700 transition"
+                    href="/DepartmentsShiftsPage"
+                    onClick={() => handleLinkClick("shifts")}
+                    className={`flex items-center gap-3 py-3 px-4 rounded-xl transition-all group ${activeLink === "shifts"
+                            ? "bg-gradient-to-r from-cyan-500 to-cyan-600 shadow-lg"
+                            : "hover:bg-indigo-700"
+                        }`}
                 >
-                    <FaPlaneDeparture />
-                    <span>إدارة الشفتات</span>
+                    <div className="p-2 rounded-lg bg-white/10 group-hover:bg-white/20 transition">
+                        <FaPlaneDeparture size={18} />
+                    </div>
+                    <span className={`${collapsed ? 'hidden' : 'block'}`}>إدارة الشفتات</span>
                 </Link>
 
-                <button
-                    className="flex items-center gap-3 py-2 px-4 w-full text-left rounded-lg hover:bg-red-600 transition"
+                <Link
+                    href="/Settings"
+                    onClick={() => handleLinkClick("settings")}
+                    className={`flex items-center gap-3 py-3 px-4 rounded-xl transition-all group ${activeLink === "settings"
+                            ? "bg-gradient-to-r from-gray-600 to-gray-700 shadow-lg"
+                            : "hover:bg-indigo-700"
+                        }`}
                 >
-                    <FaSignOutAlt />
-                    <span>تسجيل الخروج</span>
-                </button>
-            </nav>
+                    <div className="p-2 rounded-lg bg-white/10 group-hover:bg-white/20 transition">
+                        <MdSettings size={20} />
+                    </div>
+                    <span className={`${collapsed ? 'hidden' : 'block'}`}>الإعدادات</span>
+                </Link>
+            </div>
+
+          
+
+           
         </aside>
     );
 };
