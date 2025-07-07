@@ -1,4 +1,5 @@
 'use client';
+
 import { useState, useEffect } from 'react';
 import SalariesTable from './SalariesTable';
 import SalaryForm from './SalaryForm';

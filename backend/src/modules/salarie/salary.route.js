@@ -7,15 +7,14 @@ import {
     deleteSalary,
     generatePayslip,
 } from "./salary.controller.js";
-import { verifyToken } from "../../utils/verifyUser.js";
 
 const router = express.Router();
 
-router.post("/", verifyToken, createSalary);
-router.get("/", verifyToken, getSalaries);
-router.get("/:id", verifyToken, getSalary);
-router.put("/:id", verifyToken, updateSalary);
-router.delete("/:id", verifyToken, deleteSalary);
-router.get("/:id/payslip", verifyToken, generatePayslip);
+router.post("/", createSalary);
+router.get("/", getSalaries);
+router.get("/:id", getSalary);
+router.put("/:id", updateSalary);
+router.delete("/:id", deleteSalary);
+router.get("/:id/payslip", generatePayslip);
 
 export default router;

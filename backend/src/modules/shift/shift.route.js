@@ -1,17 +1,16 @@
 import express from 'express';
-import { 
-  createShift, 
-  getShifts, 
-  updateShift, 
-  deleteShift 
+import {
+  createShift,
+  getShifts,
+  updateShift,
+  deleteShift
 } from './shift.controller.js';
-import { verifyToken } from '../../utils/verifyUser.js';
 
 const router = express.Router();
 
-router.post('/', verifyToken, createShift);
-router.get('/', verifyToken, getShifts);
-router.put('/:id', verifyToken, updateShift);
-router.delete('/:id', verifyToken, deleteShift);
+router.post('/', createShift);
+router.get('/', getShifts);
+router.put('/:id', updateShift);
+router.delete('/:id', deleteShift);
 
 export default router;

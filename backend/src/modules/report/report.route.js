@@ -4,11 +4,10 @@ import {
   getMonthlyReport,
   getAnnualReport
 } from "./report.controller.js";
-import { verifyToken } from "../../utils/verifyUser.js";
 
 const router = express.Router();
 
-router.get("/monthly", verifyToken, getMonthlyReport);
-router.get("/annual/:year", verifyToken, getAnnualReport);
+router.get("/monthly", getMonthlyReport);
+router.get("/annual/:year", getAnnualReport);
 
 export default router;

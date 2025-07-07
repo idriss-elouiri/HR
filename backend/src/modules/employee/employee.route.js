@@ -9,14 +9,13 @@ import {
 } from './employee.controller.js';
 import { validateZod } from '../../middlewares/validate-zod.js';
 import { employeeSchema } from './employee.schema.js';
-import { verifyToken } from '../../utils/verifyUser.js';
 
 const router = express.Router();
 
 // تطبيق التحقق من الصحة والمصادقة على جميع الطرق
 
 router.route('/')
-  .post(validateZod(employeeSchema), verifyToken, createEmployee)
+  .post(validateZod(employeeSchema), createEmployee)
   .get(getEmployees);
 
 router.route('/:id')
@@ -24,6 +23,6 @@ router.route('/:id')
   .put(validateZod(employeeSchema.partial()), updateEmployee)
   .delete(deleteEmployee);
 
-router.put('/:id/shift', verifyToken, updateEmployeeShift);
+router.put('/:id/shift', updateEmployeeShift);
 
 export default router;

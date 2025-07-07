@@ -10,9 +10,8 @@ import {
 import {
     FaEdit, FaTrash, FaPlus, FaSync,
     FaSearch, FaChevronLeft, FaChevronRight,
-    FaMoneyBillWave, FaPrint, FaFileAlt, FaFilter
+     FaPrint, FaFileAlt, FaFilter
 } from 'react-icons/fa';
-import Link from 'next/link';
 import { motion } from 'framer-motion';
 
 const SalariesTable = ({

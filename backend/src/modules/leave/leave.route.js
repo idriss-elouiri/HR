@@ -7,14 +7,13 @@ import {
     updateLeave,
     getLeaveSummary
 } from "./leave.controller.js";
-import { verifyToken } from "../../utils/verifyUser.js";
 
 const router = express.Router();
 
-router.post("/", verifyToken, createLeave);
-router.get("/", verifyToken, getLeaves);
-router.put("/:id", verifyToken, updateLeave);
-router.put("/:id/status", verifyToken, updateLeaveStatus);
-router.get("/summary/:employeeId/:year", verifyToken, getLeaveSummary);
+router.post("/", createLeave);
+router.get("/", getLeaves);
+router.put("/:id", updateLeave);
+router.put("/:id/status", updateLeaveStatus);
+router.get("/summary/:employeeId/:year", getLeaveSummary);
 
 export default router;
