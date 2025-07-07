@@ -162,7 +162,7 @@ const SalaryForm = ({ employee: initialEmployee, onSuccess, onCancel, salary }) 
                     date: new Date(),
                     status: 'معلقة',
                 },
-
+                paymentDate: salary.paymentDate ? new Date(salary.paymentDate) : null
             };
             formik.setValues(formattedSalary);
 
@@ -226,7 +226,7 @@ const SalaryForm = ({ employee: initialEmployee, onSuccess, onCancel, salary }) 
                         date: d.date?.toISOString() || new Date().toISOString(),
                         status: d.status || 'معلقة'
                     })),
-                    paymentDate: values.paymentDate,
+                    paymentDate: values.paymentDate?.toISOString(),
                     paymentMethod: values.paymentMethod,
                     paymentReference: values.paymentReference,
                     netSalary: calculateNetSalary(),

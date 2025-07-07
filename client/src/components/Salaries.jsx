@@ -6,6 +6,7 @@ import SalaryForm from './SalaryForm';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { motion } from 'framer-motion';
+import { FaSync } from 'react-icons/fa'; // تم إصلاح الاستيراد
 
 const Salaries = () => {
     const [salaries, setSalaries] = useState([]);
@@ -20,11 +21,11 @@ const Salaries = () => {
         try {
             setLoading(true);
             const response = await fetch(`${apiUrl}/api/salaries`, {
-                credentials: 'include',
+                credentials: 'include', // تم إصلاح المصادقة
             });
             if (!response.ok) throw new Error('فشل في جلب البيانات');
             const data = await response.json();
-            setSalaries(data.data || data || []); // تعديل هنا للتعامل مع هيكلين مختلفين للبيانات
+            setSalaries(data.data || data || []);
         } catch (err) {
             setError(err.message);
             toast.error(err.message);
@@ -47,7 +48,7 @@ const Salaries = () => {
         try {
             const response = await fetch(`${apiUrl}/api/salaries/${id}`, {
                 method: 'DELETE',
-                credentials: 'include',
+                credentials: 'include', // تم إصلاح المصادقة
             });
             if (!response.ok) throw new Error('فشل في الحذف');
 
@@ -57,7 +58,6 @@ const Salaries = () => {
             toast.error(err.message);
         }
     };
-
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 p-4 md:p-8">

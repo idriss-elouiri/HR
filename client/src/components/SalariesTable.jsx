@@ -10,7 +10,7 @@ import {
 import {
     FaEdit, FaTrash, FaPlus, FaSync,
     FaSearch, FaChevronLeft, FaChevronRight,
-     FaPrint, FaFileAlt, FaFilter
+    FaPrint, FaFileAlt, FaFilter
 } from 'react-icons/fa';
 import { motion } from 'framer-motion';
 
@@ -35,7 +35,7 @@ const SalariesTable = ({
             accessorFn: (row) => `${row.month}/${row.year}`,
             cell: ({ row }) => (
                 <div className="flex flex-col">
-                    <span className="font-bold text-blue-700">{row.month}/{row.year}</span>
+                    <span className="font-bold text-blue-700">{row.original.month}/{row.original.year}</span>
                     <span className="text-xs text-gray-500">
                         {row.original.employee?.department || 'غير محدد'}
                     </span>
@@ -169,7 +169,7 @@ const SalariesTable = ({
                 </div>
             ),
         },
-    ], [apiUrl]);
+    ], [apiUrl, onEdit]);
 
     const table = useReactTable({
         data,
