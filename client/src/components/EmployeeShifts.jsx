@@ -57,7 +57,18 @@ const EmployeeShifts = () => {
             const data = await response.json();
             if (data.success) {
                 toast.success('تم تحديث شفت الموظف بنجاح');
-                fetchData();
+
+                // البحث عن كائن الشفت الكامل في حالة shifts
+                const updatedShift = shifts.find(s => s._id === shiftId);
+
+                setEmployees(prevEmployees =>
+                    prevEmployees.map(emp =>
+                        emp._id === employeeId ? {
+                            ...emp,
+                            shift: updatedShift || shiftId // استخدم الكائن إن وجد، أو الـ ID كبديل
+                        } : emp
+                    )
+                );
             } else {
                 toast.error(data.message || 'حدث خطأ');
             }
@@ -66,20 +77,22 @@ const EmployeeShifts = () => {
         }
     };
 
-    // فلترة الموظفين حسب البحث والفلاتر
+
+    // التعديل 2: تعديل شروط الفلترة لاستخدام القيم النصية مباشرة
     const filteredEmployees = employees.filter(employee => {
         const matchesSearch = searchTerm ?
-            employee.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            (employee.position && employee.position.toLowerCase().includes(searchTerm.toLowerCase())) : true;
+            employee.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            (employee.jobTitle && employee.jobTitle.toLowerCase().includes(searchTerm.toLowerCase())) : true;
 
         const matchesDepartment = departmentFilter ?
-            employee.department?._id === departmentFilter : true;
+            employee.department === departmentFilter : true;
 
         const matchesShift = shiftFilter ?
-            employee.shift?._id === shiftFilter : true;
+            (employee.shift?._id === shiftFilter) : true;
 
         return matchesSearch && matchesDepartment && matchesShift;
     });
+
 
     // إحصائيات سريعة
     const totalEmployees = employees.length;
@@ -194,9 +207,9 @@ const EmployeeShifts = () => {
                             startContent={<FaBuilding className="text-gray-400" />}
                         >
                             <SelectItem key="">جميع الأقسام</SelectItem>
-                            {uniqueDepartments.map(dept => (
-                                <SelectItem key={dept._id} value={dept._id}>
-                                    {dept.name}
+                            {uniqueDepartments.map((dept, index) => (
+                                <SelectItem key={dept} value={dept}>
+                                    {dept}
                                 </SelectItem>
                             ))}
                         </Select>
@@ -294,7 +307,7 @@ const EmployeeShifts = () => {
                                                         color="primary"
                                                         startContent={<FaBuilding className="text-xs mr-1" />}
                                                     >
-                                                        {employee.department.name}
+                                                        {employee.department}
                                                     </Chip>
                                                 ) : (
                                                     <Badge color="warning" variant="flat" content="بدون قسم">
@@ -304,20 +317,30 @@ const EmployeeShifts = () => {
                                             </TableCell>
                                             <TableCell className="text-center">
                                                 <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full font-medium">
-                                                    {employee.position || '--'}
+                                                    {employee.jobTitle || '--'}
                                                 </span>
                                             </TableCell>
+
                                             <TableCell className="text-center">
                                                 {employee.shift ? (
                                                     <div className="inline-flex flex-col items-center">
-                                                        <span className="font-bold text-indigo-700">{employee.shift.name}</span>
+                                                        <span className="font-bold text-indigo-700">
+                                                            {typeof employee.shift === 'object'
+                                                                ? employee.shift.name
+                                                                : shifts.find(s => s._id === employee.shift)?.name || 'تحميل...'}
+                                                        </span>
                                                         <span className="text-xs bg-gradient-to-r from-blue-100 to-indigo-100 px-2 py-1 rounded-full mt-1">
-                                                            {employee.shift.startTime} → {employee.shift.endTime}
+                                                            {typeof employee.shift === 'object'
+                                                                ? `${employee.shift.startTime} → ${employee.shift.endTime}`
+                                                                : (() => {
+                                                                    const shiftObj = shifts.find(s => s._id === employee.shift);
+                                                                    return shiftObj ? `${shiftObj.startTime} → ${shiftObj.endTime}` : 'تحميل...';
+                                                                })()}
                                                         </span>
                                                     </div>
                                                 ) : (
-                                                    <Badge color="danger" variant="flat" content="غير معين">
-                                                        <span className="text-gray-500">--</span>
+                                                    <Badge color="danger" variant="flat">
+                                                        غير معين
                                                     </Badge>
                                                 )}
                                             </TableCell>
@@ -327,9 +350,7 @@ const EmployeeShifts = () => {
                                                     className="min-w-[200px]"
                                                     selectedKeys={employee.shift ? [employee.shift._id] : []}
                                                     onChange={(e) => handleShiftChange(employee._id, e.target.value)}
-                                                    classNames={{
-                                                        trigger: "border border-gray-300 shadow-sm"
-                                                    }}
+                                                    classNames={{ trigger: "border border-gray-300 shadow-sm" }}
                                                 >
                                                     <SelectItem key="">لا شيء</SelectItem>
                                                     {shifts.map(shift => (

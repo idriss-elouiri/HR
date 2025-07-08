@@ -56,11 +56,16 @@ const ShiftsManagement = () => {
             const response = await fetch(`${apiUrl}/api/shifts`, {
                 credentials: 'include'
             });
+
+            if (!response.ok) {
+                throw new Error('Failed to fetch shifts');
+            }
+
             const data = await response.json();
-            if (data.success) {
+            if (data.success && data.data) {
                 setShifts(data.data);
             } else {
-                toast.error('فشل في جلب الشفتات');
+                toast.error(data.message || 'فشل في جلب الشفتات');
             }
         } catch (error) {
             toast.error('حدث خطأ أثناء جلب الشفتات');

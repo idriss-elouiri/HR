@@ -5,11 +5,12 @@ import {
   getAbsences,
   updateAbsenceStatus
 } from "./absence.controller.js";
+import { verifyToken } from "../../utils/verifyUser.js";
 
 const router = express.Router();
 
-router.post("/", createAbsence);
+router.post("/", verifyToken, createAbsence);
 router.get("/", getAbsences);
-router.put("/:id/status", updateAbsenceStatus);
+router.put("/:id/status", verifyToken, updateAbsenceStatus);
 
 export default router;

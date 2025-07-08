@@ -9,20 +9,19 @@ import {
 } from './employee.controller.js';
 import { validateZod } from '../../middlewares/validate-zod.js';
 import { employeeSchema } from './employee.schema.js';
+import { verifyToken } from '../../utils/verifyUser.js';
 
 const router = express.Router();
 
 // تطبيق التحقق من الصحة والمصادقة على جميع الطرق
+router.get('/', getEmployees);
+router.get('/:id', getEmployee);
 
-router.route('/')
-  .post(validateZod(employeeSchema), createEmployee)
-  .get(getEmployees);
+// طرق تحتاج مصادقة
 
-router.route('/:id')
-  .get(getEmployee)
-  .put(validateZod(employeeSchema.partial()), updateEmployee)
-  .delete(deleteEmployee);
-
-router.put('/:id/shift', updateEmployeeShift);
+router.post('/', validateZod(employeeSchema), verifyToken, createEmployee);
+router.put('/:id', validateZod(employeeSchema.partial()), verifyToken, updateEmployee);
+router.delete('/:id', verifyToken, deleteEmployee);
+router.put('/:id/shift', verifyToken, updateEmployeeShift);
 
 export default router;

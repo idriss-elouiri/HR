@@ -31,11 +31,15 @@ export const createShift = async (req, res, next) => {
 
 export const getShifts = async (req, res, next) => {
     try {
-        const shifts = await Shift.find().populate('department', 'name').populate('createdBy', 'name');
-        res.status(200).json({
-            success: true,
-            data: shifts
-        });
+        const shifts = await Shift.find()
+            .populate('department', 'name')
+            .populate('createdBy', 'name');
+
+        if (!shifts || shifts.length === 0) {
+            return next(errorHandler(404, 'No shifts found'));
+        }
+
+        res.status(200).json({ success: true, data: shifts });
     } catch (error) {
         next(error);
     }

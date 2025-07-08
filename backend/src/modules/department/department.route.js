@@ -5,12 +5,12 @@ import {
     updateDepartment,
     deleteDepartment
 } from './department.controller.js';
-
+import { verifyToken } from '../../utils/verifyUser.js';
 const router = express.Router();
 
-router.post('/', createDepartment);
+router.post('/', verifyToken, createDepartment);
 router.get('/', getDepartments);
-router.put('/:id', updateDepartment);
-router.delete('/:id', deleteDepartment);
+router.put('/:id', verifyToken, updateDepartment);
+router.delete('/:id', verifyToken, deleteDepartment);
 
 export default router;

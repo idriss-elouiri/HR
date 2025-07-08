@@ -1,7 +1,7 @@
-"use client"
+"use client";
 
-import { useState, useEffect, useCallback } from 'react';
-import { Tabs, Tab, Card, CardBody, Spinner } from "@nextui-org/react";
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { Tabs, Tab, Card, CardBody, Spinner, Button } from "@nextui-org/react";
 import MonthlyReport from '../components/MonthlyReport';
 import AnnualReport from '../components/AnnualReport';
 import { ToastContainer, toast } from 'react-toastify';
@@ -10,30 +10,67 @@ import { FaChartLine, FaChartBar, FaFileExcel, FaFilePdf, FaInfoCircle } from 'r
 
 const Reports = () => {
   const [activeTab, setActiveTab] = useState("monthly");
-  const [isLoading, setIsLoading] = useState(false);
   const apiUrl = process.env.NEXT_PUBLIC_API_URL;
   const currentYear = new Date().getFullYear();
 
-  // إصلاح: استخدام useCallback لتثبيت مرجع الدالة
-  const fetchData = useCallback(async (url) => {
-    setIsLoading(true);
+  const abortControllers = useRef({
+    monthly: null,
+    annual: null
+  });
+
+  const [isLoading, setIsLoading] = useState({
+    monthly: false,
+    annual: false
+  });
+
+  const [error, setError] = useState({
+    monthly: null,
+    annual: null
+  });
+
+  // تحسين دالة fetchData
+  const fetchData = useCallback(async (url, type) => {
+    if (abortControllers.current[type]) {
+      abortControllers.current[type].abort();
+    }
+
+    const controller = new AbortController();
+    abortControllers.current[type] = controller;
+
+    setIsLoading(prev => ({ ...prev, [type]: true }));
+    setError(prev => ({ ...prev, [type]: null }));
+
     try {
       const response = await fetch(url, {
         credentials: 'include',
+        signal: controller.signal,
       });
 
       if (!response.ok) {
-        throw new Error('فشل في جلب البيانات');
+        throw new Error(`فشل في جلب البيانات: ${response.status}`);
       }
 
-      return await response.json();
+      const data = await response.json();
+      return data;
     } catch (err) {
-      toast.error(err.message);
+      if (err.name !== 'AbortError') {
+        console.error(`[${type}] Fetch error:`, err);
+        setError(prev => ({ ...prev, [type]: err.message || 'حدث خطأ في جلب البيانات' }));
+        toast.error(err.message || 'حدث خطأ في جلب البيانات');
+      }
       return null;
     } finally {
-      setIsLoading(false);
+      setIsLoading(prev => ({ ...prev, [type]: false }));
     }
-  }, []); // تبعيات فارغة لتثبيت الدالة
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      Object.values(abortControllers.current).forEach(controller => {
+        if (controller) controller.abort();
+      });
+    };
+  }, []);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 p-4 md:p-8">
@@ -82,29 +119,45 @@ const Reports = () => {
                 </Tabs>
 
                 <div className="p-6">
-                  {isLoading ? (
+                  {isLoading[activeTab] ? (
                     <div className="flex flex-col items-center justify-center py-16">
-                      <Spinner
-                        size="lg"
-                        classNames={{
-                          circle1: "border-b-indigo-600",
-                          circle2: "border-b-indigo-600",
+                      <Spinner size="lg" />
+                      <span className="mt-4 text-lg text-gray-600 font-medium">
+                        جاري تحميل {activeTab === "monthly" ? "التقرير الشهري" : "التقرير السنوي"}...
+                      </span>
+                    </div>
+                  ) : error[activeTab] ? (
+                    <div className="text-center py-12 bg-red-50 rounded-xl">
+                      <div className="inline-block p-4 bg-red-100 rounded-full mb-4">
+                        <FaInfoCircle className="text-red-600 text-3xl" />
+                      </div>
+                      <h3 className="text-xl font-semibold text-red-800 mb-2">حدث خطأ</h3>
+                      <p className="mb-6 max-w-md mx-auto text-red-700">{error[activeTab]}</p>
+                      <Button
+                        color="primary"
+                        onClick={() => {
+                          if (activeTab === "monthly") {
+                            fetchData(`${apiUrl}/api/reports/monthly?month=${new Date().getMonth() + 1}&year=${currentYear}`, 'monthly');
+                          } else {
+                            fetchData(`${apiUrl}/api/reports/annual/${currentYear}`, 'annual');
+                          }
                         }}
-                      />
-                      <span className="mt-4 text-lg text-gray-600 font-medium">جاري تحميل البيانات...</span>
+                        className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white"
+                      >
+                        المحاولة مرة أخرى
+                      </Button>
                     </div>
                   ) : (
                     <>
                       {activeTab === "monthly" ? (
                         <MonthlyReport
-                          fetchData={fetchData}
+                          fetchData={(url) => fetchData(url, 'monthly')}
                           apiUrl={apiUrl}
                           currentYear={currentYear}
                         />
                       ) : (
-                        // إصلاح: استبدال المكون الخطأ
                         <AnnualReport
-                          fetchData={fetchData}
+                          fetchData={(url) => fetchData(url, 'annual')}
                           apiUrl={apiUrl}
                           currentYear={currentYear}
                         />
@@ -160,7 +213,7 @@ const Reports = () => {
             </Card>
           </div>
         </div>
-      </div>
+      </div >
 
       <ToastContainer
         position="top-center"
@@ -168,7 +221,7 @@ const Reports = () => {
         toastClassName="font-sans"
         progressClassName="bg-gradient-to-r from-indigo-500 to-purple-500"
       />
-    </div>
+    </div >
   );
 };
 

@@ -110,6 +110,7 @@ export const updateEmployee = async (req, res, next) => {
     }
 };
 
+// controllers/employee.controller.js
 export const updateEmployeeShift = async (req, res, next) => {
   try {
     const { id } = req.params;

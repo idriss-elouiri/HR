@@ -26,12 +26,12 @@ const MonthlyReport = ({ fetchData, apiUrl, currentYear }) => {
   const [year, setYear] = useState(currentYear.toString());
   const [reportData, setReportData] = useState([]);
   const [page, setPage] = useState(1);
-  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [rowsPerPage] = useState(10);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // إصلاح: استخدام useRef لمنع الطلبات المتكررة
-  const lastRequestRef = useRef({ month: '', year: '' });
+  // مراقب للتغيرات
+  const lastFetchRef = useRef({ month: '', year: '' });
 
   const years = useMemo(() => {
     const startYear = 2020;
@@ -42,17 +42,20 @@ const MonthlyReport = ({ fetchData, apiUrl, currentYear }) => {
     return options;
   }, [currentYear]);
 
+  // منع الطلبات المتكررة لنفس البيانات
+  const shouldFetch = () => {
+    return month !== lastFetchRef.current.month || year !== lastFetchRef.current.year;
+  };
+
   useEffect(() => {
-    // إصلاح: التحقق من تغير المعلمات قبل الجلب
-    if (month && year &&
-      (month !== lastRequestRef.current.month || year !== lastRequestRef.current.year)) {
+    if (month && year && shouldFetch()) {
       fetchReport();
     }
   }, [month, year]);
 
   const fetchReport = async () => {
     // تحديث المرجع لمنع الطلبات المتكررة
-    lastRequestRef.current = { month, year };
+    lastFetchRef.current = { month, year };
 
     setIsLoading(true);
     setError(null);
@@ -61,12 +64,7 @@ const MonthlyReport = ({ fetchData, apiUrl, currentYear }) => {
     try {
       const data = await fetchData(`${apiUrl}/api/reports/monthly?month=${month}&year=${year}`);
 
-      if (!data) {
-        throw new Error('لا توجد استجابة من الخادم');
-      }
-
-      if (data.success) {
-        // إصلاح: تحويل البيانات إلى الصيغة المتوقعة
+      if (data?.success) {
         const formattedData = data.data.map(item => ({
           ...item,
           totalLeaves: item.totalLeaves || 0,
@@ -75,28 +73,26 @@ const MonthlyReport = ({ fetchData, apiUrl, currentYear }) => {
         }));
         setReportData(formattedData);
       } else {
-        setError(data.message || 'فشل في جلب البيانات من الخادم');
+        setError(data?.message || 'فشل في جلب البيانات من الخادم');
       }
     } catch (err) {
-      setError(err.message || 'حدث خطأ أثناء جلب البيانات');
+      if (err.name !== 'AbortError') {
+        setError(err.message || 'حدث خطأ أثناء جلب البيانات');
+      }
     } finally {
       setIsLoading(false);
     }
   };
 
-  useEffect(() => {
-    if (month && year) {
-      fetchReport();
-    }
-  }, [fetchReport, month, year]);
-
-  // في MonthlyReport.js
-  const stats = useMemo(() => ({
-    totalEmployees: reportData.length,
-    totalLeaves: reportData.reduce((sum, item) => sum + (item.totalLeaves || 0), 0),
-    totalHours: reportData.reduce((sum, item) => sum + (item.totalHours || 0), 0),
-    totalAbsences: reportData.reduce((sum, item) => sum + (item.totalAbsences || 0), 0)
-  }), [reportData]);
+  // إحصائيات التقرير
+  const { totalEmployees, totalLeaves, totalHours, totalAbsences } = useMemo(() => {
+    return {
+      totalEmployees: reportData.length,
+      totalLeaves: reportData.reduce((sum, item) => sum + (item.totalLeaves || 0), 0),
+      totalHours: reportData.reduce((sum, item) => sum + (item.totalHours || 0), 0),
+      totalAbsences: reportData.reduce((sum, item) => sum + (item.totalAbsences || 0), 0)
+    };
+  }, [reportData]);
 
   const handleExport = (format) => {
     alert(`سيتم تصدير التقرير الشهري كـ ${format} قريباً`);
@@ -106,12 +102,6 @@ const MonthlyReport = ({ fetchData, apiUrl, currentYear }) => {
     (page - 1) * rowsPerPage,
     page * rowsPerPage
   );
-
-  // إحصائيات التقرير
-  const totalEmployees = reportData.length;
-  const totalLeaves = reportData.reduce((sum, item) => sum + (item.totalLeaves || 0), 0);
-  const totalHours = reportData.reduce((sum, item) => sum + (item.totalHours || 0), 0);
-  const totalAbsences = reportData.reduce((sum, item) => sum + (item.totalAbsences || 0), 0);
 
   return (
     <motion.div
@@ -154,7 +144,7 @@ const MonthlyReport = ({ fetchData, apiUrl, currentYear }) => {
             }}
             startContent={<FaCalendarAlt className="text-indigo-500" />}
           >
-            {years.map((y) => ( // استخدام المتغير years مباشرة
+            {years.map((y) => (
               <SelectItem key={y} value={y}>
                 {y}
               </SelectItem>
@@ -242,14 +232,7 @@ const MonthlyReport = ({ fetchData, apiUrl, currentYear }) => {
           </CardBody>
         </Card>
       </div>
-      {reportData.length === 0 && !isLoading && !error && (
-        <div className="text-center py-10">
-          <FaInfoCircle className="mx-auto text-4xl text-indigo-500 mb-4" />
-          <p className="text-lg font-medium text-gray-600">
-            لا توجد بيانات متاحة للعرض
-          </p>
-        </div>
-      )}
+
       {isLoading ? (
         <Card className="rounded-2xl shadow-lg">
           <CardBody className="flex flex-col items-center justify-center py-16">

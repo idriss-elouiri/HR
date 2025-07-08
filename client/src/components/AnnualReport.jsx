@@ -13,10 +13,11 @@ const AnnualReport = ({ fetchData, apiUrl, currentYear }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
   const [page, setPage] = useState(1);
-  const [rowsPerPage, setRowsPerPage] = useState(5);
-  const lastRequestRef = useRef('');
+  const [rowsPerPage] = useState(5);
 
-  // إصلاح: استخدام useMemo مباشرة بدون useState
+  // مراقب للتغيرات
+  const lastFetchRef = useRef('');
+
   const years = useMemo(() => {
     const startYear = 2020;
     const options = [];
@@ -26,15 +27,20 @@ const AnnualReport = ({ fetchData, apiUrl, currentYear }) => {
     return options;
   }, [currentYear]);
 
+  // منع الطلبات المتكررة لنفس البيانات
+  const shouldFetch = () => {
+    return year !== lastFetchRef.current;
+  };
+
   useEffect(() => {
-    if (year && year !== lastRequestRef.current) {
+    if (year && shouldFetch()) {
       fetchReport();
     }
   }, [year]);
 
   const fetchReport = async () => {
-
-    lastRequestRef.current = year;
+    // تحديث المرجع لمنع الطلبات المتكررة
+    lastFetchRef.current = year;
 
     setIsLoading(true);
     setError(null);
@@ -42,8 +48,7 @@ const AnnualReport = ({ fetchData, apiUrl, currentYear }) => {
     try {
       const data = await fetchData(`${apiUrl}/api/reports/annual/${year}`);
 
-      if (data && data.success) {
-        // إصلاح: تحويل البيانات إلى الصيغة المتوقعة
+      if (data?.success) {
         const formattedData = data.data.map(emp => ({
           ...emp,
           totalLeaves: emp.totalLeaves || 0,
@@ -54,11 +59,12 @@ const AnnualReport = ({ fetchData, apiUrl, currentYear }) => {
         }));
         setReportData(formattedData);
       } else {
-        setError('فشل في جلب البيانات من الخادم');
+        setError(data?.message || 'فشل في جلب البيانات من الخادم');
       }
     } catch (err) {
-      setError('حدث خطأ أثناء جلب البيانات');
-      console.error('Fetch error:', err);
+      if (err.name !== 'AbortError') {
+        setError('حدث خطأ أثناء جلب البيانات');
+      }
     } finally {
       setIsLoading(false);
     }
@@ -81,10 +87,14 @@ const AnnualReport = ({ fetchData, apiUrl, currentYear }) => {
   );
 
   // إحصائيات التقرير
-  const totalEmployees = reportData.length;
-  const totalLeaves = reportData.reduce((sum, item) => sum + (item.totalLeaves || 0), 0);
-  const totalHours = reportData.reduce((sum, item) => sum + (item.totalHours || 0), 0);
-  const totalAbsences = reportData.reduce((sum, item) => sum + (item.totalAbsences || 0), 0);
+  const { totalEmployees, totalLeaves, totalHours, totalAbsences } = useMemo(() => {
+    return {
+      totalEmployees: reportData.length,
+      totalLeaves: reportData.reduce((sum, item) => sum + (item.totalLeaves || 0), 0),
+      totalHours: reportData.reduce((sum, item) => sum + (item.totalHours || 0), 0),
+      totalAbsences: reportData.reduce((sum, item) => sum + (item.totalAbsences || 0), 0)
+    };
+  }, [reportData]);
 
   return (
     <motion.div
@@ -107,7 +117,7 @@ const AnnualReport = ({ fetchData, apiUrl, currentYear }) => {
             }}
             startContent={<FaCalendarAlt className="text-indigo-500" />}
           >
-            {years.map((y) => ( // استخدام المتغير years مباشرة
+            {years.map((y) => (
               <SelectItem key={y} value={y}>
                 {y}
               </SelectItem>

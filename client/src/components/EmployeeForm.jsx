@@ -233,6 +233,47 @@ const EmployeeForm = ({ employee, onSuccess, onCancel }) => {
                         <FaUser className="ml-2 text-blue-500" /> المعلومات الأساسية
                     </h3>
                     <div className="grid grid-cols-2 gap-4">
+
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">رقم الموظف</label>
+                            <div className="relative">
+                                <input
+                                    type="text"
+                                    name="employeeId"
+                                    value={formik.values.employeeId}
+                                    onChange={formik.handleChange}
+                                    onBlur={formik.handleBlur}
+                                    className={inputClass(formik.touched.employeeId, formik.errors.employeeId)}
+                                />
+                                <FaFingerprint className="absolute left-3 top-3.5 text-gray-400" />
+                            </div>
+                            {formik.touched.employeeId && formik.errors.employeeId && (
+                                <p className="mt-1 text-sm text-red-600 flex items-center">
+                                    <FaInfoCircle className="ml-1" /> {formik.errors.employeeId}
+                                </p>
+                            )}
+                        </div>
+
+                        {/* حقل الاسم الكامل */}
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">الاسم الكامل</label>
+                            <div className="relative">
+                                <input
+                                    type="text"
+                                    name="fullName"
+                                    value={formik.values.fullName}
+                                    onChange={formik.handleChange}
+                                    onBlur={formik.handleBlur}
+                                    className={inputClass(formik.touched.fullName, formik.errors.fullName)}
+                                />
+                                <FaUser className="absolute left-3 top-3.5 text-gray-400" />
+                            </div>
+                            {formik.touched.fullName && formik.errors.fullName && (
+                                <p className="mt-1 text-sm text-red-600 flex items-center">
+                                    <FaInfoCircle className="ml-1" /> {formik.errors.fullName}
+                                </p>
+                            )}
+                        </div>
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center">
                                 <FaUser className="ml-1 text-sm text-blue-500" /> الجنس

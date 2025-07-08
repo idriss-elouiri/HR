@@ -1,12 +1,11 @@
 import Salary from "./salary.model.js";
 import Employee from "../employee/employee.models.js"
 import { errorHandler } from "../../utils/error.js";
-import PDFDocument from 'pdfkit';
-import fs from "fs";
+import pdf from 'html-pdf';
 
 export const createSalary = async (req, res, next) => {
     try {
-const { employee: employeeId, month, year } = req.body;
+        const { employee: employeeId, month, year } = req.body;
 
         // التحقق من صحة البيانات المدخلة
         if (!employeeId || !month || !year) {
@@ -83,7 +82,6 @@ export const getSalaries = async (req, res, next) => {
     }
 };
 
-// باقي الدوال (getSalary, updateSalary, deleteSalary) تبقى كما هي مع تحسينات طفيفة
 
 export const generatePayslip = async (req, res, next) => {
     try {
@@ -99,69 +97,206 @@ export const generatePayslip = async (req, res, next) => {
             return next(errorHandler(400, "بيانات الموظف غير متوفرة"));
         }
 
-        // إنشاء مستند PDF
-        const doc = new PDFDocument();
-        const fileName = `payslip_${salary.employee.employeeId}_${salary.month}_${salary.year}.pdf`;
+        // إنشاء HTML بسيط
+        const htmlContent = `
+        <!DOCTYPE html>
+        <html lang="ar" dir="rtl">
+        <head>
+            <meta charset="UTF-8">
+            <title>إقرار الراتب</title>
+            <style>
+                body {
+                    font-family: Arial, sans-serif;
+                    margin: 20px;
+                }
+                .header {
+                    text-align: center;
+                    margin-bottom: 30px;
+                }
+                .company-name {
+                    font-size: 24px;
+                    font-weight: bold;
+                }
+                .document-title {
+                    font-size: 20px;
+                    margin: 10px 0;
+                }
+                .section {
+                    margin-bottom: 20px;
+                }
+                .section-title {
+                    font-weight: bold;
+                    border-bottom: 1px solid #000;
+                    padding-bottom: 5px;
+                    margin-bottom: 10px;
+                }
+                .footer {
+                    margin-top: 30px;
+                    text-align: center;
+                    font-size: 12px;
+                    color: #666;
+                }
+                table {
+                    width: 100%;
+                    border-collapse: collapse;
+                    margin: 10px 0;
+                }
+                th, td {
+                    border: 1px solid #ddd;
+                    padding: 8px;
+                    text-align: right;
+                }
+                th {
+                    background-color: #f2f2f2;
+                }
+            </style>
+        </head>
+        <body>
+            <div class="header">
+                <div class="company-name">شركة مثال</div>
+                <div class="document-title">إقرار الراتب الشهري</div>
+            </div>
+            
+            <div class="section">
+                <div class="section-title">معلومات الموظف</div>
+                <table>
+                    <tr>
+                        <th>الاسم</th>
+                        <td>${salary.employee.fullName}</td>
+                    </tr>
+                    <tr>
+                        <th>رقم الموظف</th>
+                        <td>${salary.employee.employeeId}</td>
+                    </tr>
+                    <tr>
+                        <th>القسم</th>
+                        <td>${salary.employee.department}</td>
+                    </tr>
+                    <tr>
+                        <th>المسمى الوظيفي</th>
+                        <td>${salary.employee.jobTitle}</td>
+                    </tr>
+                    <tr>
+                        <th>الهوية الوطنية</th>
+                        <td>${salary.employee.nationalId || 'غير محدد'}</td>
+                    </tr>
+                </table>
+            </div>
+            
+            <div class="section">
+                <div class="section-title">تفاصيل الراتب</div>
+                <table>
+                    <tr>
+                        <th>الشهر/السنة</th>
+                        <td>${salary.month}/${salary.year}</td>
+                    </tr>
+                    <tr>
+                        <th>الراتب الأساسي</th>
+                        <td>${salary.baseSalary.toLocaleString('ar-SA')} ر.س</td>
+                    </tr>
+                </table>
+            </div>
+            
+            ${salary.allowances?.length > 0 ? `
+            <div class="section">
+                <div class="section-title">البدلات</div>
+                <table>
+                    <tr>
+                        <th>النوع</th>
+                        <th>المبلغ</th>
+                    </tr>
+                    ${salary.allowances.map(a => `
+                        <tr>
+                            <td>${a.type}</td>
+                            <td>${a.amount.toLocaleString('ar-SA')} ر.س</td>
+                        </tr>
+                    `).join('')}
+                </table>
+            </div>
+            ` : ''}
+            
+            ${salary.deductions?.length > 0 ? `
+            <div class="section">
+                <div class="section-title">الخصومات</div>
+                <table>
+                    <tr>
+                        <th>النوع</th>
+                        <th>المبلغ</th>
+                    </tr>
+                    ${salary.deductions.map(d => `
+                        <tr>
+                            <td>${d.type}</td>
+                            <td>${d.amount.toLocaleString('ar-SA')} ر.س</td>
+                        </tr>
+                    `).join('')}
+                </table>
+            </div>
+            ` : ''}
+            
+            ${salary.socialInsurance?.amount > 0 ? `
+            <div class="section">
+                <div class="section-title">التأمينات الاجتماعية</div>
+                <table>
+                    <tr>
+                        <th>المبلغ</th>
+                        <td>${salary.socialInsurance.amount.toLocaleString('ar-SA')} ر.س</td>
+                    </tr>
+                    <tr>
+                        <th>النسبة</th>
+                        <td>${salary.socialInsurance.percentage}%</td>
+                    </tr>
+                </table>
+            </div>
+            ` : ''}
+            
+            <div class="section">
+                <div class="section-title">الإجمالي</div>
+                <table>
+                    <tr>
+                        <th>الراتب الصافي</th>
+                        <td>${salary.netSalary.toLocaleString('ar-SA')} ر.س</td>
+                    </tr>
+                </table>
+            </div>
+            
+            <div class="footer">
+                <p>تم الإنشاء في: ${new Date().toLocaleDateString('ar-SA')}</p>
+                <p>هذا المستند تم إنشاؤه تلقائياً ولا يحتاج إلى توقيع</p>
+            </div>
+        </body>
+        </html>
+        `;
 
-        // تعيين رؤوس الاستجابة
-        res.setHeader('Content-Type', 'application/pdf');
-        res.setHeader('Content-Disposition', `inline; filename="${fileName}"`);
+        // خيارات PDF
+        const options = {
+            format: 'A4',
+            orientation: 'portrait',
+            border: {
+                top: '10mm',
+                right: '10mm',
+                bottom: '10mm',
+                left: '10mm'
+            }
+        };
 
-        // إضافة محتوى PDF
-        doc.fontSize(18).text('شركة مثال', { align: 'center' });
-        doc.moveDown();
-        doc.fontSize(16).text('إقرار الراتب الشهري', { align: 'center' });
-        doc.moveDown();
+        // إنشاء وإرسال PDF
+        pdf.create(htmlContent, options).toStream((err, stream) => {
+            if (err) {
+                console.error('Error generating PDF:', err);
+                return next(errorHandler(500, "حدث خطأ أثناء إنشاء إقرار الراتب"));
+            }
 
-        // معلومات الموظف
-        doc.fontSize(14).text('معلومات الموظف:', { underline: true });
-        doc.text(`الاسم: ${salary.employee.fullName}`);
-        doc.text(`رقم الموظف: ${salary.employee.employeeId}`);
-        doc.text(`القسم: ${salary.employee.department}`);
-        doc.text(`المسمى الوظيفي: ${salary.employee.jobTitle}`);
-        doc.moveDown();
+            res.setHeader('Content-Type', 'application/pdf');
+            res.setHeader('Content-Disposition', `inline; filename="payslip_${salary.employee.employeeId}_${salary.month}_${salary.year}.pdf"`);
 
-        // تفاصيل الراتب
-        doc.fontSize(14).text('تفاصيل الراتب:', { underline: true });
-        doc.text(`الشهر: ${salary.month}/${salary.year}`);
-        doc.text(`الراتب الأساسي: ${salary.baseSalary.toLocaleString('ar-SA')} ر.س`);
-        doc.moveDown();
-
-        // إضافة البدلات
-        if (salary.allowances && salary.allowances.length > 0) {
-            doc.fontSize(12).text('البدلات:', { underline: true });
-            salary.allowances.forEach(allowance => {
-                doc.text(`${allowance.type}: ${allowance.amount.toLocaleString('ar-SA')} ر.س`);
-            });
-            doc.moveDown();
-        }
-
-        // إضافة الخصومات
-        if (salary.deductions && salary.deductions.length > 0) {
-            doc.fontSize(12).text('الخصومات:', { underline: true });
-            salary.deductions.forEach(deduction => {
-                doc.text(`${deduction.type}: ${deduction.amount.toLocaleString('ar-SA')} ر.س`);
-            });
-            doc.moveDown();
-        }
-
-        // الراتب الصافي
-        doc.fontSize(14).text(`الراتب الصافي: ${salary.netSalary.toLocaleString('ar-SA')} ر.س`, { underline: true });
-        doc.moveDown();
-
-        doc.text(`حالة الراتب: ${salary.status}`);
-        doc.text(`تاريخ الإنشاء: ${new Date().toLocaleDateString('ar-SA')}`);
-
-        // إرسال PDF كاستجابة
-        doc.pipe(res);
-        doc.end();
+            stream.pipe(res);
+        });
 
     } catch (error) {
         console.error('Error generating payslip:', error);
         next(errorHandler(500, "حدث خطأ أثناء إنشاء إقرار الراتب"));
     }
 };
-
 export const getSalary = async (req, res, next) => {
     try {
         const salary = await Salary.findById(req.params.id)
