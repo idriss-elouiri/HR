@@ -21,14 +21,13 @@ const months = [
   { label: "ديسمبر", value: "12" },
 ];
 
-const MonthlyReport = ({ fetchData, apiUrl, currentYear }) => {
+const MonthlyReport = ({ fetchData, apiUrl, currentYear, isLoading, error }) => {
   const [month, setMonth] = useState((new Date().getMonth() + 1).toString());
   const [year, setYear] = useState(currentYear.toString());
   const [reportData, setReportData] = useState([]);
   const [page, setPage] = useState(1);
   const [rowsPerPage] = useState(10);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState(null);
+  const [localIsLoading, setLocalIsLoading] = useState(false);
 
   // مراقب للتغيرات
   const lastFetchRef = useRef({ month: '', year: '' });
@@ -48,22 +47,28 @@ const MonthlyReport = ({ fetchData, apiUrl, currentYear }) => {
   };
 
   useEffect(() => {
+    if (!shouldFetch()) return;
+
     if (month && year && shouldFetch()) {
       fetchReport();
     }
   }, [month, year]);
 
   const fetchReport = async () => {
-    // تحديث المرجع لمنع الطلبات المتكررة
+    if (!shouldFetch()) return;
     lastFetchRef.current = { month, year };
-
-    setIsLoading(true);
-    setError(null);
-    setReportData([]);
+    setLocalIsLoading(true); // تمكين حالة التحميل المحلية
+    setReportData([]); // إعادة تعيين البيانات أثناء التحميل
 
     try {
-      const data = await fetchData(`${apiUrl}/api/reports/monthly?month=${month}&year=${year}`);
-
+      const data = await fetchData(
+        `${apiUrl}/api/reports/monthly?month=${month}&year=${year}`,
+        'monthly'
+      );
+      if (!data) {
+        console.log('تم إلغاء الطلب أو حدث خطأ غير معالج');
+        return;
+      }
       if (data?.success) {
         const formattedData = data.data.map(item => ({
           ...item,
@@ -73,14 +78,14 @@ const MonthlyReport = ({ fetchData, apiUrl, currentYear }) => {
         }));
         setReportData(formattedData);
       } else {
-        setError(data?.message || 'فشل في جلب البيانات من الخادم');
+        console.log(data?.message || 'فشل في جلب البيانات من الخادم');
       }
     } catch (err) {
       if (err.name !== 'AbortError') {
-        setError(err.message || 'حدث خطأ أثناء جلب البيانات');
+        console.log(err.message || 'حدث خطأ أثناء جلب البيانات');
       }
     } finally {
-      setIsLoading(false);
+      setLocalIsLoading(false); // تعطيل حالة التحميل المحلية
     }
   };
 
@@ -233,7 +238,7 @@ const MonthlyReport = ({ fetchData, apiUrl, currentYear }) => {
         </Card>
       </div>
 
-      {isLoading ? (
+      {localIsLoading ? (
         <Card className="rounded-2xl shadow-lg">
           <CardBody className="flex flex-col items-center justify-center py-16">
             <Spinner

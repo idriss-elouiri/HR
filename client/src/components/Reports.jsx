@@ -46,12 +46,21 @@ const Reports = () => {
         signal: controller.signal,
       });
 
-      if (!response.ok) {
-        throw new Error(`فشل في جلب البيانات: ${response.status}`);
+      // تحقق من نجاح الطلب (2xx status) باستخدام response.ok
+      if (response.ok) {
+        const data = await response.json();
+        return data;
+      } else {
+        // إذا لم يكن الرد ناجحاً، حاول تحليل رسالة الخطأ من الخادم
+        let errorMessage = `فشل في جلب البيانات: ${response.status}`;
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorMessage;
+        } catch (e) {
+          // إذا فشل تحليل JSON، استخدم الرسالة الافتراضية
+        }
+        throw new Error(errorMessage);
       }
-
-      const data = await response.json();
-      return data;
     } catch (err) {
       if (err.name !== 'AbortError') {
         console.error(`[${type}] Fetch error:`, err);
@@ -63,7 +72,6 @@ const Reports = () => {
       setIsLoading(prev => ({ ...prev, [type]: false }));
     }
   }, []);
-
   useEffect(() => {
     return () => {
       Object.values(abortControllers.current).forEach(controller => {
@@ -154,12 +162,16 @@ const Reports = () => {
                           fetchData={(url) => fetchData(url, 'monthly')}
                           apiUrl={apiUrl}
                           currentYear={currentYear}
+                          isLoading={isLoading.monthly} // يتم استخدام هذا لإدارة الإلغاء فقط
+                          error={error.monthly}
                         />
                       ) : (
                         <AnnualReport
                           fetchData={(url) => fetchData(url, 'annual')}
                           apiUrl={apiUrl}
                           currentYear={currentYear}
+                          isLoading={isLoading.annual}
+                          error={error.annual}
                         />
                       )}
                     </>

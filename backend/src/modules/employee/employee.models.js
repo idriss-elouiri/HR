@@ -134,6 +134,12 @@ const employeeSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Shift'
     },
+    fingerprintId: {
+      type: String,
+      unique: true,
+      trim: true,
+      sparse: true // يسمح بقيم null
+    },
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",

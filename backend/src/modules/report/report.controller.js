@@ -1,9 +1,11 @@
 // controllers/report.controller.js
-import Absence  from "../absence/Absence.model.js";
-import Leave  from "../leave/Leave.model.js";
-import { errorHandler }  from "../../utils/error.js";
+import Absence from "../absence/Absence.model.js";
+import Leave from "../leave/Leave.model.js";
+import { errorHandler } from "../../utils/error.js";
+
 
 export const getMonthlyReport = async (req, res, next) => {
+
   try {
     const { month, year } = req.query;
     const monthInt = parseInt(month);

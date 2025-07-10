@@ -32,6 +32,21 @@ const EmployeesTable = ({ data, onEdit, onDelete, onRefresh, onAdd, loading }) =
             accessorKey: 'fullName',
         },
         {
+            id: 'fingerprintId',
+            header: 'معرف البصمة',
+            accessorKey: 'fingerprintId',
+            cell: ({ row }) => {
+                const value = row.original.fingerprintId;
+                return value ? (
+                    <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs">
+                        {value}
+                    </span>
+                ) : (
+                    <span className="text-gray-500">---</span>
+                );
+            }
+        },
+        {
             id: 'department',
             header: 'القسم',
             accessorKey: 'department',

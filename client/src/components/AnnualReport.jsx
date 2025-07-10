@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import {
   Select, SelectItem, Button, Table, TableHeader, TableColumn,
   TableBody, TableRow, TableCell, Spinner, Pagination, Card, CardBody, Chip
@@ -6,14 +6,13 @@ import {
 import { FaFileExcel, FaFilePdf, FaSearch, FaChevronDown, FaChevronUp, FaInfoCircle, FaUser, FaBuilding, FaCalendarAlt, FaClock } from 'react-icons/fa';
 import { motion, AnimatePresence } from 'framer-motion';
 
-const AnnualReport = ({ fetchData, apiUrl, currentYear }) => {
+const AnnualReport = ({ fetchData, apiUrl, currentYear, isLoading, error }) => {
   const [year, setYear] = useState(currentYear.toString());
   const [reportData, setReportData] = useState([]);
   const [expandedRows, setExpandedRows] = useState({});
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState(null);
   const [page, setPage] = useState(1);
   const [rowsPerPage] = useState(5);
+  const [localIsLoading, setLocalIsLoading] = useState(false);
 
   // مراقب للتغيرات
   const lastFetchRef = useRef('');
@@ -28,26 +27,32 @@ const AnnualReport = ({ fetchData, apiUrl, currentYear }) => {
   }, [currentYear]);
 
   // منع الطلبات المتكررة لنفس البيانات
-  const shouldFetch = () => {
+  const shouldFetch = useCallback(() => {
     return year !== lastFetchRef.current;
-  };
+  }, [year]);
+
 
   useEffect(() => {
     if (year && shouldFetch()) {
       fetchReport();
     }
-  }, [year]);
+  }, [year, shouldFetch]);
 
   const fetchReport = async () => {
-    // تحديث المرجع لمنع الطلبات المتكررة
+    if (!shouldFetch()) return;
     lastFetchRef.current = year;
 
-    setIsLoading(true);
-    setError(null);
-
+    setLocalIsLoading(true);
+    setReportData([]);
     try {
-      const data = await fetchData(`${apiUrl}/api/reports/annual/${year}`);
-
+      const data = await fetchData(
+        `${apiUrl}/api/reports/annual/${year}`,
+        'annual'
+      );
+      if (!data) {
+        console.log('تم إلغاء الطلب أو حدث خطأ غير معالج');
+        return;
+      }
       if (data?.success) {
         const formattedData = data.data.map(emp => ({
           ...emp,
@@ -59,14 +64,14 @@ const AnnualReport = ({ fetchData, apiUrl, currentYear }) => {
         }));
         setReportData(formattedData);
       } else {
-        setError(data?.message || 'فشل في جلب البيانات من الخادم');
+        console.log(data?.message || 'فشل في جلب البيانات من الخادم');
       }
     } catch (err) {
       if (err.name !== 'AbortError') {
-        setError('حدث خطأ أثناء جلب البيانات');
+        console.log('حدث خطأ أثناء جلب البيانات');
       }
     } finally {
-      setIsLoading(false);
+      setLocalIsLoading(false);
     }
   };
 
@@ -205,7 +210,7 @@ const AnnualReport = ({ fetchData, apiUrl, currentYear }) => {
         </Card>
       </div>
 
-      {isLoading ? (
+      {localIsLoading ? (
         <Card className="rounded-2xl shadow-lg">
           <CardBody className="flex flex-col items-center justify-center py-16">
             <Spinner

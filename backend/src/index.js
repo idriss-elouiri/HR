@@ -10,6 +10,7 @@ import reportRouter from './modules/report/report.route.js';
 import departmentRouter from './modules/department/department.route.js';
 import shiftRouter from './modules/shift/shift.route.js';
 import dashboardRouter from './modules/dashboard/dashboard.route.js';
+import attendanceRouter from './modules/attendance/attendance.route.js';
 import cookieParser from "cookie-parser";
 import dotenv from "dotenv";
 
@@ -38,6 +39,7 @@ app.use('/api/reports', reportRouter);
 app.use('/api/departments', departmentRouter);
 app.use('/api/shifts', shiftRouter);
 app.use('/api/dashboard', dashboardRouter);
+app.use('/api/attendance', attendanceRouter);
 
 app.get("/*", (req, res) => {
     res.json("hello world");

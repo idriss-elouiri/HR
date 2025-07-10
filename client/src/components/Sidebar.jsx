@@ -14,7 +14,8 @@ import {
     FaChevronLeft,
     FaChevronRight,
     FaHome,
-    FaChartLine
+    FaChartLine,
+    FaTimes
 } from "react-icons/fa";
 import { MdPeopleAlt, MdSettings } from "react-icons/md";
 
@@ -54,26 +55,26 @@ const Sidebar = () => {
             </div>
 
             <div className="p-4 space-y-1">
-                    <Link
-                        href="/Dashboard"
-                        onClick={() => handleLinkClick("dashboard")}
-                        className={`flex items-center gap-3 py-3 px-4 rounded-xl transition-all group ${activeLink === "dashboard"
-                                ? "bg-gradient-to-r from-amber-500 to-amber-600 shadow-lg"
-                                : "hover:bg-indigo-700"
-                            }`}
-                    >
-                        <div className="p-2 rounded-lg bg-white/10 group-hover:bg-white/20 transition">
-                            <FaTachometerAlt size={20} />
-                        </div>
-                        <span className={`${collapsed ? 'hidden' : 'block'}`}>لوحة التحكم</span>
-                    </Link>
+                <Link
+                    href="/Dashboard"
+                    onClick={() => handleLinkClick("dashboard")}
+                    className={`flex items-center gap-3 py-3 px-4 rounded-xl transition-all group ${activeLink === "dashboard"
+                        ? "bg-gradient-to-r from-amber-500 to-amber-600 shadow-lg"
+                        : "hover:bg-indigo-700"
+                        }`}
+                >
+                    <div className="p-2 rounded-lg bg-white/10 group-hover:bg-white/20 transition">
+                        <FaTachometerAlt size={20} />
+                    </div>
+                    <span className={`${collapsed ? 'hidden' : 'block'}`}>لوحة التحكم</span>
+                </Link>
 
                 <Link
                     href="/Employees"
                     onClick={() => handleLinkClick("employees")}
                     className={`flex items-center gap-3 py-3 px-4 rounded-xl transition-all group ${activeLink === "employees"
-                            ? "bg-gradient-to-r from-blue-500 to-blue-600 shadow-lg"
-                            : "hover:bg-indigo-700"
+                        ? "bg-gradient-to-r from-blue-500 to-blue-600 shadow-lg"
+                        : "hover:bg-indigo-700"
                         }`}
                 >
                     <div className="p-2 rounded-lg bg-white/10 group-hover:bg-white/20 transition">
@@ -86,8 +87,8 @@ const Sidebar = () => {
                     href="/Salaries"
                     onClick={() => handleLinkClick("salaries")}
                     className={`flex items-center gap-3 py-3 px-4 rounded-xl transition-all group ${activeLink === "salaries"
-                            ? "bg-gradient-to-r from-green-500 to-green-600 shadow-lg"
-                            : "hover:bg-indigo-700"
+                        ? "bg-gradient-to-r from-green-500 to-green-600 shadow-lg"
+                        : "hover:bg-indigo-700"
                         }`}
                 >
                     <div className="p-2 rounded-lg bg-white/10 group-hover:bg-white/20 transition">
@@ -100,8 +101,8 @@ const Sidebar = () => {
                     href="/LeavesAbsences"
                     onClick={() => handleLinkClick("leaves")}
                     className={`flex items-center gap-3 py-3 px-4 rounded-xl transition-all group ${activeLink === "leaves"
-                            ? "bg-gradient-to-r from-purple-500 to-purple-600 shadow-lg"
-                            : "hover:bg-indigo-700"
+                        ? "bg-gradient-to-r from-purple-500 to-purple-600 shadow-lg"
+                        : "hover:bg-indigo-700"
                         }`}
                 >
                     <div className="p-2 rounded-lg bg-white/10 group-hover:bg-white/20 transition">
@@ -114,8 +115,8 @@ const Sidebar = () => {
                     href="/Reports"
                     onClick={() => handleLinkClick("reports")}
                     className={`flex items-center gap-3 py-3 px-4 rounded-xl transition-all group ${activeLink === "reports"
-                            ? "bg-gradient-to-r from-pink-500 to-pink-600 shadow-lg"
-                            : "hover:bg-indigo-700"
+                        ? "bg-gradient-to-r from-pink-500 to-pink-600 shadow-lg"
+                        : "hover:bg-indigo-700"
                         }`}
                 >
                     <div className="p-2 rounded-lg bg-white/10 group-hover:bg-white/20 transition">
@@ -128,8 +129,8 @@ const Sidebar = () => {
                     href="/DepartmentsShiftsPage"
                     onClick={() => handleLinkClick("shifts")}
                     className={`flex items-center gap-3 py-3 px-4 rounded-xl transition-all group ${activeLink === "shifts"
-                            ? "bg-gradient-to-r from-cyan-500 to-cyan-600 shadow-lg"
-                            : "hover:bg-indigo-700"
+                        ? "bg-gradient-to-r from-cyan-500 to-cyan-600 shadow-lg"
+                        : "hover:bg-indigo-700"
                         }`}
                 >
                     <div className="p-2 rounded-lg bg-white/10 group-hover:bg-white/20 transition">
@@ -139,11 +140,25 @@ const Sidebar = () => {
                 </Link>
 
                 <Link
+                    href="/ZKAttendance"
+                    onClick={() => handleLinkClick("attendance")}
+                    className={`flex items-center gap-3 py-3 px-4 rounded-xl transition-all group ${activeLink === "attendance"
+                        ? "bg-gradient-to-r from-cyan-500 to-cyan-600 shadow-lg"
+                        : "hover:bg-indigo-700"
+                        }`}
+                >
+                    <div className="p-2 rounded-lg bg-white/10 group-hover:bg-white/20 transition">
+                        <FaTimes size={18} />
+                    </div>
+                    <span className={`${collapsed ? 'hidden' : 'block'}`}>الحضور والانصراف</span>
+                </Link>
+
+                <Link
                     href="/Settings"
                     onClick={() => handleLinkClick("settings")}
                     className={`flex items-center gap-3 py-3 px-4 rounded-xl transition-all group ${activeLink === "settings"
-                            ? "bg-gradient-to-r from-gray-600 to-gray-700 shadow-lg"
-                            : "hover:bg-indigo-700"
+                        ? "bg-gradient-to-r from-gray-600 to-gray-700 shadow-lg"
+                        : "hover:bg-indigo-700"
                         }`}
                 >
                     <div className="p-2 rounded-lg bg-white/10 group-hover:bg-white/20 transition">
@@ -153,9 +168,9 @@ const Sidebar = () => {
                 </Link>
             </div>
 
-          
 
-           
+
+
         </aside>
     );
 };

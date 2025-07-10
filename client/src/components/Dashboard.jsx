@@ -123,7 +123,7 @@ const Dashboard = () => {
                     variant="light"
                     className="mb-6"
                     classNames={{
-                        tab: "text-lg font-medium px-6",
+                        tab: "text-lg font-medium px-6 text-white",
                         cursor: "bg-gradient-to-r from-purple-500 to-indigo-500"
                     }}
                 >

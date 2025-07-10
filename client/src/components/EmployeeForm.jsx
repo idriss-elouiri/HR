@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
     FaMapMarkerAlt,
     FaCalendarAlt,
@@ -39,10 +39,29 @@ const EmployeeForm = ({ employee, onSuccess, onCancel }) => {
     };
 
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [shifts, setShifts] = useState([]);
     const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+
+    useEffect(() => {
+        const fetchShifts = async () => {
+            try {
+                const response = await fetch(`${apiUrl}/api/shifts`);
+                if (!response.ok) throw new Error('فشل جلب بيانات الشفتات');
+                const data = await response.json();
+                setShifts(data.data);
+            } catch (error) {
+                console.error('Error fetching shifts:', error);
+            }
+        };
+
+        fetchShifts();
+    }, []);
 
     const validationSchema = Yup.object({
         employeeId: Yup.string().required('حقل مطلوب'),
+        fingerprintId: Yup.string()
+            .nullable()
+            .transform(value => (value === '' ? null : value)),
         fullName: Yup.string().required('حقل مطلوب'),
         gender: Yup.string().required('حقل مطلوب'),
         maritalStatus: Yup.string().required('حقل مطلوب'),
@@ -233,7 +252,26 @@ const EmployeeForm = ({ employee, onSuccess, onCancel }) => {
                         <FaUser className="ml-2 text-blue-500" /> المعلومات الأساسية
                     </h3>
                     <div className="grid grid-cols-2 gap-4">
-
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">معرف البصمة</label>
+                            <div className="relative">
+                                <input
+                                    type="text"
+                                    name="fingerprintId"
+                                    value={formik.values.fingerprintId}
+                                    onChange={formik.handleChange}
+                                    onBlur={formik.handleBlur}
+                                    className={inputClass(formik.touched.fingerprintId, formik.errors.fingerprintId)}
+                                    placeholder="أدخل المعرف المستخدم في جهاز البصمة"
+                                />
+                                <FaFingerprint className="absolute left-3 top-3.5 text-gray-400" />
+                            </div>
+                            {formik.touched.fingerprintId && formik.errors.fingerprintId && (
+                                <p className="mt-1 text-sm text-red-600 flex items-center">
+                                    <FaInfoCircle className="ml-1" /> {formik.errors.fingerprintId}
+                                </p>
+                            )}
+                        </div>
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">رقم الموظف</label>
                             <div className="relative">
@@ -468,6 +506,23 @@ const EmployeeForm = ({ employee, onSuccess, onCancel }) => {
                                 <FaInfoCircle className="ml-1" /> {formik.errors.department}
                             </p>
                         )}
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">الشفت</label>
+                        <select
+                            name="shift"
+                            value={formik.values.shift}
+                            onChange={formik.handleChange}
+                            className={inputClass(formik.touched.shift, formik.errors.shift)}
+                        >
+                            <option value="">اختر شفت</option>
+                            {shifts.map(shift => (
+                                <option key={shift._id} value={shift._id}>
+                                    {shift.name} ({shift.startTime} - {shift.endTime})
+                                </option>
+                            ))}
+                        </select>
                     </div>
 
                     <div>
