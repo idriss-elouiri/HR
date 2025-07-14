@@ -1,7 +1,7 @@
 import Attendance from './attendance.schema.js';
 import Employee from '../employee/employee.models.js';
 import { errorHandler } from '../../utils/error.js';
-import ZKLib from 'node-zklib';
+import ZKLib from 'zklib';
 
 // دالة مساعدة للبحث عن الموظف باستخدام معرف البصمة
 const findEmployeeByFingerprint = async (fingerprintId) => {
@@ -24,35 +24,24 @@ export const syncWithDevice = async (req, res, next) => {
     try {
         const { deviceIp, devicePort = 4370 } = req.body;
 
-        const device = new ZKLib({
-            ip: deviceIp,
-            port: devicePort,
-            timeout: 10000
-        });
-
-        await device.connect();
-        const logs = await device.getAttendances();
-        await device.disconnect();
-
+        // إنشاء كائن الجهاز
+        const zkInstance = new ZKLib(deviceIp, devicePort, 10000, 4000);
 
         try {
             // إنشاء الاتصال
-            await device.createSocket();
+            await zkInstance.createSocket();
+            console.log('تم الاتصال بنجاح بجهاز البصمة');
 
             // جلب سجلات الحضور
-            const logs = await device.getAttendances();
+            const logs = await zkInstance.getAttendances();
+            console.log(`تم جلب ${logs.length} سجل حضور`);
 
             // معالجة البيانات
             const attendanceRecords = await Promise.all(logs.map(async log => {
-                const employee = await Employee.findOne({
-                    $or: [
-                        { fingerprintId: log.userId },
-                        { employeeId: log.userId }
-                    ]
-                });
+                const employee = await findEmployeeByFingerprint(log.userId);
 
                 if (!employee) {
-                    console.warn(`Employee not found for ID: ${log.userId}`);
+                    console.warn(`الموظف غير موجود للرقم: ${log.userId}`);
                     return null;
                 }
 
@@ -67,20 +56,25 @@ export const syncWithDevice = async (req, res, next) => {
             }));
 
             // حفظ السجلات
-            const savedRecords = await Attendance.insertMany(
-                attendanceRecords.filter(record => record !== null)
-            );
+            const validRecords = attendanceRecords.filter(record => record !== null);
+            const savedRecords = await Attendance.insertMany(validRecords);
+            console.log(`تم حفظ ${savedRecords.length} سجل حضور`);
 
             res.status(200).json({
                 success: true,
                 message: `تم مزامنة ${savedRecords.length} سجل حضور`,
                 data: savedRecords
             });
+        } catch (error) {
+            console.error('خطأ في عملية المزامنة:', error);
+            throw error;
         } finally {
             // قطع الاتصال في النهاية
-            await device.disconnect();
+            await zkInstance.disconnect();
+            console.log('تم قطع الاتصال بجهاز البصمة');
         }
     } catch (error) {
+        console.error('خطأ في المزامنة:', error);
         next(errorHandler(500, `خطأ في المزامنة: ${error.message}`));
     }
 };
@@ -278,3 +272,4 @@ export const manualCheckOut = async (req, res, next) => {
         next(error);
     }
 };
+

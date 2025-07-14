@@ -86,3 +86,20 @@ export const updateAbsenceStatus = async (req, res, next) => {
         next(error);
     }
 };
+
+export const deleteAbsence = async (req, res, next) => {
+    try {
+        const absence = await Absence.findByIdAndDelete(req.params.id);
+
+        if (!absence) {
+            return next(errorHandler(404, "طلب الغياب والتأخير غير موجود"));
+        }
+
+        res.status(200).json({
+            success: true,
+            message: "تم حذف الغياب والتأخير بنجاح"
+        });
+    } catch (error) {
+        next(error);
+    }
+};

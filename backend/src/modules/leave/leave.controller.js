@@ -152,3 +152,19 @@ export const getLeaveSummary = async (req, res, next) => {
     next(error);
   }
 };
+export const deleteLeave = async (req, res, next) => {
+  try {
+    const leave = await Leave.findByIdAndDelete(req.params.id);
+
+    if (!leave) {
+      return next(errorHandler(404, "طلب الإجازة غير موجود"));
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "تم حذف الإجازة بنجاح"
+    });
+  } catch (error) {
+    next(error);
+  }
+};

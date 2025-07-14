@@ -32,6 +32,7 @@ app.use(
 
 app.use("/api/auth", authRouter);
 app.use("/api/employees", employeeRouter);
+app.use('/api/attendance', attendanceRouter);
 app.use("/api/salaries", salarieRouter);
 app.use('/api/leaves', leaveRouter);
 app.use('/api/absences', absenceRouter);
@@ -39,7 +40,6 @@ app.use('/api/reports', reportRouter);
 app.use('/api/departments', departmentRouter);
 app.use('/api/shifts', shiftRouter);
 app.use('/api/dashboard', dashboardRouter);
-app.use('/api/attendance', attendanceRouter);
 
 app.get("/*", (req, res) => {
     res.json("hello world");

@@ -112,27 +112,27 @@ export const updateEmployee = async (req, res, next) => {
 
 // controllers/employee.controller.js
 export const updateEmployeeShift = async (req, res, next) => {
-  try {
-    const { id } = req.params;
-    const { shift } = req.body;
+    try {
+        const { id } = req.params;
+        const { shift } = req.body;
 
-    const updatedEmployee = await Employee.findByIdAndUpdate(
-      id,
-      { shift },
-      { new: true }
-    ).populate('shift department');
+        const updatedEmployee = await Employee.findByIdAndUpdate(
+            id,
+            { shift },
+            { new: true }
+        ).populate('shift department');
 
-    if (!updatedEmployee) {
-      return next(errorHandler(404, 'الموظف غير موجود'));
+        if (!updatedEmployee) {
+            return next(errorHandler(404, 'الموظف غير موجود'));
+        }
+
+        res.status(200).json({
+            success: true,
+            data: updatedEmployee
+        });
+    } catch (error) {
+        next(error);
     }
-
-    res.status(200).json({
-      success: true,
-      data: updatedEmployee
-    });
-  } catch (error) {
-    next(error);
-  }
 };
 
 export const deleteEmployee = async (req, res, next) => {
