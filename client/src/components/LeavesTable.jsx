@@ -167,8 +167,8 @@ const LeavesTable = ({ data, onEdit, onDelete, onRefresh, onAdd }) => {
                   key={status}
                   onClick={() => setStatusFilter(status)}
                   className={`px-3 py-1 mx-1 rounded-lg text-sm font-medium transition-all ${statusFilter === status
-                      ? 'bg-blue-600 text-white shadow-sm'
-                      : 'text-gray-700 hover:bg-gray-200'
+                    ? 'bg-blue-600 text-white shadow-sm'
+                    : 'text-gray-700 hover:bg-gray-200'
                     }`}
                 >
                   {status}
@@ -241,8 +241,8 @@ const LeavesTable = ({ data, onEdit, onDelete, onRefresh, onAdd }) => {
                 <button
                   key={i}
                   className={`w-8 h-8 rounded-full text-sm ${table.getState().pagination.pageIndex === i
-                      ? 'bg-blue-600 text-white'
-                      : 'text-gray-700 hover:bg-gray-200'
+                    ? 'bg-blue-600 text-white'
+                    : 'text-gray-700 hover:bg-gray-200'
                     }`}
                   onClick={() => table.setPageIndex(i)}
                 >

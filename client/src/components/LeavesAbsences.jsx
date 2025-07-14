@@ -48,7 +48,48 @@ const LeavesAbsences = () => {
       toast.error('فشل في جلب بيانات الغياب');
     }
   };
+  const handleDeleteLeave = async (id) => {
+    if (window.confirm('هل أنت متأكد من رغبتك في حذف هذه الإجازة؟')) {
+      try {
+        const response = await fetch(`${apiUrl}/api/leaves/${id}`, {
+          method: 'DELETE',
+          credentials: 'include',
+        });
 
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.message || 'فشل في حذف الإجازة');
+        }
+
+        toast.success('تم حذف الإجازة بنجاح');
+        fetchLeaves(); // إعادة تحميل البيانات
+      } catch (error) {
+        toast.error(error.message);
+      }
+    }
+  };
+
+  // إضافة دالة لحذف الغياب
+  const handleDeleteAbsence = async (id) => {
+    if (window.confirm('هل أنت متأكد من رغبتك في حذف هذا الغياب؟')) {
+      try {
+        const response = await fetch(`${apiUrl}/api/absences/${id}`, {
+          method: 'DELETE',
+          credentials: 'include',
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.message || 'فشل في حذف الغياب');
+        }
+
+        toast.success('تم حذف الغياب بنجاح');
+        fetchAbsences(); // إعادة تحميل البيانات
+      } catch (error) {
+        toast.error(error.message);
+      }
+    }
+  };
   useEffect(() => {
     if (activeTab === "leaves") fetchLeaves();
     if (activeTab === "absences") fetchAbsences();
@@ -92,6 +133,8 @@ const LeavesAbsences = () => {
                 setSelectedLeave(leave);
                 setShowLeaveForm(true);
               }}
+              onDelete={handleDeleteLeave}
+
               onRefresh={fetchLeaves}
             />
           ) : (
@@ -105,6 +148,7 @@ const LeavesAbsences = () => {
                 setSelectedAbsence(absence);
                 setShowAbsenceForm(true);
               }}
+              onDelete={handleDeleteAbsence}
               onRefresh={fetchAbsences}
             />
           )}

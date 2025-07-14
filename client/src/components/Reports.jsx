@@ -1,239 +1,183 @@
-"use client";
+"use client"
 
-import { useState, useEffect, useCallback, useRef } from 'react';
-import { Tabs, Tab, Card, CardBody, Spinner, Button } from "@nextui-org/react";
+import { useState, useEffect, useCallback } from 'react';
+import { Tabs, Tab, Card, CardBody, Spinner, Button, Select, SelectItem } from "@nextui-org/react";
 import MonthlyReport from '../components/MonthlyReport';
 import AnnualReport from '../components/AnnualReport';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import { FaChartLine, FaChartBar, FaFileExcel, FaFilePdf, FaInfoCircle } from 'react-icons/fa';
+import { FaChartLine, FaChartBar, FaCrown } from 'react-icons/fa';
 
 const Reports = () => {
   const [activeTab, setActiveTab] = useState("monthly");
   const apiUrl = process.env.NEXT_PUBLIC_API_URL;
   const currentYear = new Date().getFullYear();
-
-  const abortControllers = useRef({
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [tabData, setTabData] = useState({
     monthly: null,
     annual: null
   });
 
-  const [isLoading, setIsLoading] = useState({
-    monthly: false,
-    annual: false
-  });
-
-  const [error, setError] = useState({
-    monthly: null,
-    annual: null
-  });
-
-  // تحسين دالة fetchData
+  // دالة موحدة لجلب البيانات
   const fetchData = useCallback(async (url, type) => {
-    if (abortControllers.current[type]) {
-      abortControllers.current[type].abort();
-    }
-
-    const controller = new AbortController();
-    abortControllers.current[type] = controller;
-
-    setIsLoading(prev => ({ ...prev, [type]: true }));
-    setError(prev => ({ ...prev, [type]: null }));
+    setIsLoading(true);
+    setError(null);
 
     try {
-      const response = await fetch(url, {
-        credentials: 'include',
-        signal: controller.signal,
-      });
+      const response = await fetch(url, { credentials: 'include' });
 
-      // تحقق من نجاح الطلب (2xx status) باستخدام response.ok
-      if (response.ok) {
-        const data = await response.json();
-        return data;
-      } else {
-        // إذا لم يكن الرد ناجحاً، حاول تحليل رسالة الخطأ من الخادم
-        let errorMessage = `فشل في جلب البيانات: ${response.status}`;
-        try {
-          const errorData = await response.json();
-          errorMessage = errorData.message || errorMessage;
-        } catch (e) {
-          // إذا فشل تحليل JSON، استخدم الرسالة الافتراضية
-        }
-        throw new Error(errorMessage);
+      if (!response.ok) {
+        throw new Error(`فشل في جلب البيانات: ${response.status}`);
       }
+
+      const result = await response.json();
+
+      if (!result.success) {
+        throw new Error('فشل في تحميل البيانات من الخادم');
+      }
+
+      setTabData(prev => ({ ...prev, [type]: result.data }));
+      return result.data;
     } catch (err) {
-      if (err.name !== 'AbortError') {
-        console.error(`[${type}] Fetch error:`, err);
-        setError(prev => ({ ...prev, [type]: err.message || 'حدث خطأ في جلب البيانات' }));
-        toast.error(err.message || 'حدث خطأ في جلب البيانات');
-      }
+      setError(err.message);
+      toast.error(err.message || 'حدث خطأ في جلب البيانات');
       return null;
     } finally {
-      setIsLoading(prev => ({ ...prev, [type]: false }));
+      setIsLoading(false);
     }
   }, []);
+
+  // جلب البيانات عند تغيير التبويب
   useEffect(() => {
-    return () => {
-      Object.values(abortControllers.current).forEach(controller => {
-        if (controller) controller.abort();
-      });
-    };
-  }, []);
+    if (activeTab === "monthly") {
+      if (!tabData.monthly) {
+        fetchData(
+          `${apiUrl}/api/reports/monthly?month=${new Date().getMonth() + 1}&year=${currentYear}`,
+          'monthly'
+        );
+      }
+    } else {
+      if (!tabData.annual) {
+        fetchData(
+          `${apiUrl}/api/reports/annual/${currentYear}`,
+          'annual'
+        );
+      }
+    }
+  }, [activeTab, tabData, fetchData, apiUrl, currentYear]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 p-4 md:p-8">
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-purple-50 p-4 md:p-8">
       <div className="max-w-6xl mx-auto">
-        <div className="text-center mb-10">
-          <h1 className="text-3xl md:text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600 mb-3">
+        <div className="text-center mb-10 relative">
+          <div className="absolute top-0 right-0 bg-gradient-to-r from-purple-500 to-indigo-600 w-16 h-16 rounded-full flex items-center justify-center shadow-lg">
+            <FaCrown className="text-white text-xl" />
+          </div>
+          <h1 className="text-3xl md:text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-indigo-800 mb-3">
             التقارير والإشعارات
           </h1>
           <p className="text-gray-600 max-w-2xl mx-auto">
-            نظام متكامل لتقارير الغياب الشهرية والسنوية مع إمكانية التصدير والتحليل
+            نظام متكامل لمتابعة أداء الموظفين وتحليل البيانات الشهرية والسنوية
           </p>
         </div>
 
-        <div className="flex flex-col md:flex-row gap-8">
-          <div className="w-full md:w-3/4">
-            <Card className="rounded-2xl shadow-xl border border-gray-200 bg-white overflow-hidden">
-              <CardBody className="p-0">
-                <Tabs
-                  selectedKey={activeTab}
-                  onSelectionChange={setActiveTab}
-                  aria-label="التقارير"
-                  classNames={{
-                    tabList: "bg-gradient-to-r from-indigo-600 to-purple-600 rounded-t-2xl p-0",
-                    cursor: "bg-white",
-                    tab: "h-16 text-white data-[selected=true]:text-indigo-600 font-medium"
-                  }}
-                >
-                  <Tab
-                    key="monthly"
-                    title={
-                      <div className="flex items-center gap-2 px-4">
-                        <FaChartLine className="text-xl" />
-                        <span>التقرير الشهري</span>
-                      </div>
-                    }
-                  />
-                  <Tab
-                    key="annual"
-                    title={
-                      <div className="flex items-center gap-2 px-4">
-                        <FaChartBar className="text-xl" />
-                        <span>التقرير السنوي</span>
-                      </div>
-                    }
-                  />
-                </Tabs>
-
-                <div className="p-6">
-                  {isLoading[activeTab] ? (
-                    <div className="flex flex-col items-center justify-center py-16">
-                      <Spinner size="lg" />
-                      <span className="mt-4 text-lg text-gray-600 font-medium">
-                        جاري تحميل {activeTab === "monthly" ? "التقرير الشهري" : "التقرير السنوي"}...
-                      </span>
-                    </div>
-                  ) : error[activeTab] ? (
-                    <div className="text-center py-12 bg-red-50 rounded-xl">
-                      <div className="inline-block p-4 bg-red-100 rounded-full mb-4">
-                        <FaInfoCircle className="text-red-600 text-3xl" />
-                      </div>
-                      <h3 className="text-xl font-semibold text-red-800 mb-2">حدث خطأ</h3>
-                      <p className="mb-6 max-w-md mx-auto text-red-700">{error[activeTab]}</p>
-                      <Button
-                        color="primary"
-                        onClick={() => {
-                          if (activeTab === "monthly") {
-                            fetchData(`${apiUrl}/api/reports/monthly?month=${new Date().getMonth() + 1}&year=${currentYear}`, 'monthly');
-                          } else {
-                            fetchData(`${apiUrl}/api/reports/annual/${currentYear}`, 'annual');
-                          }
-                        }}
-                        className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white"
-                      >
-                        المحاولة مرة أخرى
-                      </Button>
-                    </div>
-                  ) : (
-                    <>
-                      {activeTab === "monthly" ? (
-                        <MonthlyReport
-                          fetchData={(url) => fetchData(url, 'monthly')}
-                          apiUrl={apiUrl}
-                          currentYear={currentYear}
-                          isLoading={isLoading.monthly} // يتم استخدام هذا لإدارة الإلغاء فقط
-                          error={error.monthly}
-                        />
-                      ) : (
-                        <AnnualReport
-                          fetchData={(url) => fetchData(url, 'annual')}
-                          apiUrl={apiUrl}
-                          currentYear={currentYear}
-                          isLoading={isLoading.annual}
-                          error={error.annual}
-                        />
-                      )}
-                    </>
-                  )}
-                </div>
-              </CardBody>
-            </Card>
-          </div>
-
-          <div className="w-full md:w-1/4">
-            <Card className="rounded-2xl shadow-lg bg-gradient-to-br from-indigo-600 to-purple-600 text-white overflow-hidden">
-              <CardBody>
-                <div className="flex items-center gap-3 mb-4">
-                  <FaInfoCircle className="text-2xl" />
-                  <h3 className="text-xl font-bold">ملاحظات هامة</h3>
-                </div>
-
-                <ul className="space-y-3">
-                  <li className="flex items-start gap-2">
-                    <div className="mt-1 w-2 h-2 rounded-full bg-white"></div>
-                    <span>التقارير تعتمد على البيانات المعتمدة فقط (حالة "موافق عليها")</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <div className="mt-1 w-2 h-2 rounded-full bg-white"></div>
-                    <span>يتم تحديث البيانات تلقائياً عند تغيير الفلاتر</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <div className="mt-1 w-2 h-2 rounded-full bg-white"></div>
-                    <span>يمكنك تصدير التقارير كملفات Excel أو PDF</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <div className="mt-1 w-2 h-2 rounded-full bg-white"></div>
-                    <span>للتقرير السنوي، يمكنك النقر على السهم لرؤية التفاصيل</span>
-                  </li>
-                </ul>
-
-                <div className="mt-6 pt-4 border-t border-white/30">
-                  <h4 className="font-bold mb-3">تصدير التقارير</h4>
-                  <div className="flex gap-3">
-                    <button className="flex-1 flex flex-col items-center justify-center gap-1 bg-white/10 hover:bg-white/20 p-3 rounded-xl transition-all">
-                      <FaFileExcel className="text-2xl" />
-                      <span className="text-sm">Excel</span>
-                    </button>
-                    <button className="flex-1 flex flex-col items-center justify-center gap-1 bg-white/10 hover:bg-white/20 p-3 rounded-xl transition-all">
-                      <FaFilePdf className="text-2xl" />
-                      <span className="text-sm">PDF</span>
-                    </button>
+        <Card className="rounded-2xl shadow-xl border border-indigo-100 bg-white/80 backdrop-blur-sm">
+          <CardBody className="p-0 overflow-hidden">
+            <Tabs
+              selectedKey={activeTab}
+              onSelectionChange={setActiveTab}
+              aria-label="التقارير"
+              classNames={{
+                tabList: "bg-gradient-to-r from-indigo-500 to-purple-600 px-4 py-2 rounded-t-2xl",
+                cursor: "bg-white shadow-lg",
+                tab: "text-white data-[hover=true]:text-indigo-100",
+                tabContent: "group-data-[selected=true]:text-indigo-700 font-medium"
+              }}
+            >
+              <Tab
+                key="monthly"
+                title={
+                  <div className="flex items-center gap-2 px-4 py-3">
+                    <FaChartLine className="text-lg" />
+                    <span>التقرير الشهري</span>
                   </div>
+                }
+              />
+              <Tab
+                key="annual"
+                title={
+                  <div className="flex items-center gap-2 px-4 py-3">
+                    <FaChartBar className="text-lg" />
+                    <span>التقرير السنوي</span>
+                  </div>
+                }
+              />
+            </Tabs>
+
+            <div className="p-4 md:p-6">
+              {isLoading ? (
+                <div className="flex flex-col items-center justify-center py-16">
+                  <Spinner size="lg" color="secondary" />
+                  <span className="mt-4 text-indigo-700 font-medium">
+                    جاري تحميل البيانات...
+                  </span>
                 </div>
-              </CardBody>
-            </Card>
-          </div>
-        </div>
-      </div >
+              ) : error ? (
+                <div className="text-center py-10 bg-gradient-to-r from-red-50 to-orange-50 rounded-xl">
+                  <h3 className="text-lg font-medium text-red-800 mb-2">حدث خطأ</h3>
+                  <p className="mb-6 text-red-700 max-w-md mx-auto">{error}</p>
+                  <Button
+                    color="primary"
+                    className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-md hover:shadow-lg transition-shadow"
+                    onClick={() => {
+                      if (activeTab === "monthly") {
+                        fetchData(
+                          `${apiUrl}/api/reports/monthly?month=${new Date().getMonth() + 1}&year=${currentYear}`,
+                          'monthly'
+                        );
+                      } else {
+                        fetchData(
+                          `${apiUrl}/api/reports/annual/${currentYear}`,
+                          'annual'
+                        );
+                      }
+                    }}
+                  >
+                    المحاولة مرة أخرى
+                  </Button>
+                </div>
+              ) : (
+                <>
+                  {activeTab === "monthly" ? (
+                    <MonthlyReport
+                      data={tabData.monthly}
+                      apiUrl={apiUrl}
+                      currentYear={currentYear}
+                      fetchData={fetchData}
+                    />
+                  ) : (
+                    <AnnualReport
+                      data={tabData.annual}
+                      apiUrl={apiUrl}
+                      currentYear={currentYear}
+                      fetchData={fetchData}
+                    />
+                  )}
+                </>
+              )}
+            </div>
+          </CardBody>
+        </Card>
+      </div>
 
       <ToastContainer
         position="top-center"
         rtl={true}
-        toastClassName="font-sans"
-        progressClassName="bg-gradient-to-r from-indigo-500 to-purple-500"
+        toastClassName="bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-200"
+        progressClassName="bg-gradient-to-r from-indigo-400 to-purple-500"
       />
-    </div >
+    </div>
   );
 };
 

@@ -202,7 +202,6 @@ const SalaryForm = ({ employee: initialEmployee, onSuccess, onCancel, salary }) 
             paymentMethod: salary?.paymentMethod || '',
             paymentReference: salary?.paymentReference || '',
         },
-        validationSchema,
         onSubmit: async (values) => {
             setIsSubmitting(true);
             try {

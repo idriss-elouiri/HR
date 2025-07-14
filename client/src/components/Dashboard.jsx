@@ -11,7 +11,6 @@ import {
 } from 'react-icons/fa';
 import moment from 'moment';
 import 'moment/locale/ar';
-
 const Dashboard = () => {
     const [dashboardData, setDashboardData] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -161,7 +160,7 @@ const Dashboard = () => {
 
                             <StatCard
                                 title="مجموع الرواتب"
-                                value={`${formatNumber(dashboardData?.monthlySalaries || 0)} ر.س`}
+                                value={`${formatNumber(dashboardData?.monthlySalaries || 0)} د.ع`}
                                 icon={<FaMoneyBillWave className="text-2xl text-amber-300" />}
                                 color="from-amber-600/70 to-amber-700/70"
                                 change={dashboardData?.salariesChange || 0}
@@ -477,7 +476,7 @@ const Dashboard = () => {
                                     <div className="text-center">
                                         <p className="text-lg">إجمالي الرواتب الشهرية</p>
                                         <p className="text-3xl font-bold mt-2">
-                                            {formatNumber(dashboardData?.monthlySalaries || 0)} ر.س
+                                            {formatNumber(dashboardData?.monthlySalaries || 0)} د.ع
                                         </p>
                                     </div>
                                 </div>
