@@ -70,15 +70,15 @@ const EmployeeForm = ({ employee, onSuccess, onCancel }) => {
         contractType: Yup.string().required('حقل مطلوب'),
         socialSecurityNumber: Yup.string()
             .matches(/^\d+$/, 'يجب أن يكون رقماً')
-            .min(10, 'يجب أن يكون 10 أرقام على الأقل')
+            .min(5, 'يجب أن يكون 10 أرقام على الأقل')
             .required('حقل مطلوب'),
         nationalId: Yup.string()
             .matches(/^\d+$/, 'يجب أن يكون رقماً')
-            .min(10, 'يجب أن يكون 10 أرقام على الأقل')
+            .min(5, 'يجب أن يكون 10 أرقام على الأقل')
             .required('حقل مطلوب'),
         phone: Yup.string()
             .matches(/^\+?[0-9]+$/, 'رقم هاتف غير صالح')
-            .min(10, 'يجب أن يكون 10 أرقام على الأقل')
+            .min(5, 'يجب أن يكون 10 أرقام على الأقل')
             .required('حقل مطلوب'),
         email: Yup.string().email('بريد إلكتروني غير صالح').required('حقل مطلوب'),
         address: Yup.string().min(10, 'العنوان قصير جداً').required('حقل مطلوب'),
@@ -91,7 +91,7 @@ const EmployeeForm = ({ employee, onSuccess, onCancel }) => {
             .required('حقل مطلوب')
             .matches(/^\d+$/, 'يجب أن يحتوي على أرقام فقط'),
         emergencyContact: Yup.string()
-            .min(10, 'يجب أن يكون 10 أحرف على الأقل')
+            .min(5, 'يجب أن يكون 10 أحرف على الأقل')
             .required('حقل مطلوب'),
         qualifications: Yup.string().required('حقل مطلوب'),
         familyMembers: Yup.number()

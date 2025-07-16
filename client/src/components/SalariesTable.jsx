@@ -61,9 +61,9 @@ const SalariesTable = ({
             accessorKey: 'baseSalary',
             cell: ({ getValue }) => (
                 <span className="font-bold text-gray-700">
-                    {Number(getValue()).toLocaleString('ar-SA', {
+                    {Number(getValue()).toLocaleString('ar-IR', {
                         style: 'currency',
-                        currency: 'SAR',
+                        currency: 'IQD',
                         minimumFractionDigits: 2
                     })}
                 </span>
@@ -74,9 +74,9 @@ const SalariesTable = ({
             accessorFn: (row) => row.allowances.reduce((sum, a) => sum + a.amount, 0),
             cell: ({ getValue }) => (
                 <span className="text-green-600 font-medium">
-                    +{Number(getValue()).toLocaleString('ar-SA', {
+                    +{Number(getValue()).toLocaleString('ar-IR', {
                         style: 'currency',
-                        currency: 'SAR',
+                        currency: 'IQD',
                         minimumFractionDigits: 2
                     })}
                 </span>
@@ -90,9 +90,9 @@ const SalariesTable = ({
             ),
             cell: ({ getValue }) => (
                 <span className="text-red-600 font-medium">
-                    -{Number(getValue()).toLocaleString('ar-SA', {
+                    -{Number(getValue()).toLocaleString('ar-IR', {
                         style: 'currency',
-                        currency: 'SAR',
+                        currency: 'IQD',
                         minimumFractionDigits: 2
                     })}
                 </span>
@@ -103,9 +103,9 @@ const SalariesTable = ({
             accessorKey: 'netSalary',
             cell: ({ getValue }) => (
                 <span className="font-bold text-blue-600">
-                    {Number(getValue()).toLocaleString('ar-SA', {
+                    {Number(getValue()).toLocaleString('ar-IR', {
                         style: 'currency',
-                        currency: 'SAR',
+                        currency: 'IQD',
                         minimumFractionDigits: 2
                     })}
                 </span>

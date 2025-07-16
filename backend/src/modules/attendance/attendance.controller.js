@@ -1,7 +1,9 @@
 import Attendance from './attendance.schema.js';
 import Employee from '../employee/employee.models.js';
+import Absence from "../absence/Absence.model.js";
+import Leave from '../leave/Leave.model.js';
 import { errorHandler } from '../../utils/error.js';
-import ZKLib from 'zklib';
+import ZKLib from 'node-zklib';
 
 // دالة مساعدة للبحث عن الموظف باستخدام معرف البصمة
 const findEmployeeByFingerprint = async (fingerprintId) => {

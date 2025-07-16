@@ -175,7 +175,8 @@ const ZKAttendanceSection = () => {
             حاضر: 'bg-green-100 text-green-800',
             متأخر: 'bg-yellow-100 text-yellow-800',
             غياب: 'bg-red-100 text-red-800',
-            'غياب جزئي': 'bg-orange-100 text-orange-800'
+            'غياب جزئي': 'bg-orange-100 text-orange-800',
+            إجازة: 'bg-purple-100 text-purple-800'
         };
 
         return (
@@ -184,7 +185,6 @@ const ZKAttendanceSection = () => {
             </span>
         );
     };
-
     // دالة لتسجيل الانصراف
     const handleCheckOut = async (id) => {
         try {
@@ -494,6 +494,11 @@ const ZKAttendanceSection = () => {
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap text-sm">
                                                     {renderStatusBadge(attendanceRecord.status)}
+                                                    {attendanceRecord.type && (
+                                                        <span className="ml-2 text-xs text-gray-500">
+                                                            ({attendanceRecord.type})
+                                                        </span>
+                                                    )}
                                                 </td>
                                             </motion.tr>
                                         ))

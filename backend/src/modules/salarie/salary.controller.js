@@ -192,7 +192,7 @@ export const generatePayslip = async (req, res, next) => {
                     </tr>
                     <tr>
                         <th>الراتب الأساسي</th>
-                        <td>${salary.baseSalary.toLocaleString('ar-SA')} ر.س</td>
+                        <td>${salary.baseSalary.toLocaleString('ar-IR')} د.ع</td>
                     </tr>
                 </table>
             </div>
@@ -208,7 +208,7 @@ export const generatePayslip = async (req, res, next) => {
                     ${salary.allowances.map(a => `
                         <tr>
                             <td>${a.type}</td>
-                            <td>${a.amount.toLocaleString('ar-SA')} ر.س</td>
+                            <td>${a.amount.toLocaleString('ar-IR')}د.ع</td>
                         </tr>
                     `).join('')}
                 </table>
@@ -226,7 +226,7 @@ export const generatePayslip = async (req, res, next) => {
                     ${salary.deductions.map(d => `
                         <tr>
                             <td>${d.type}</td>
-                            <td>${d.amount.toLocaleString('ar-SA')} ر.س</td>
+                            <td>${d.amount.toLocaleString('ar-IR')} د.ع</td>
                         </tr>
                     `).join('')}
                 </table>
@@ -239,7 +239,7 @@ export const generatePayslip = async (req, res, next) => {
                 <table>
                     <tr>
                         <th>المبلغ</th>
-                        <td>${salary.socialInsurance.amount.toLocaleString('ar-SA')} ر.س</td>
+                        <td>${salary.socialInsurance.amount.toLocaleString('ar-IR')} د.ع</td>
                     </tr>
                     <tr>
                         <th>النسبة</th>
@@ -254,13 +254,13 @@ export const generatePayslip = async (req, res, next) => {
                 <table>
                     <tr>
                         <th>الراتب الصافي</th>
-                        <td>${salary.netSalary.toLocaleString('ar-SA')} ر.س</td>
+                        <td>${salary.netSalary.toLocaleString('ar-IR')}د.ع</td>
                     </tr>
                 </table>
             </div>
             
             <div class="footer">
-                <p>تم الإنشاء في: ${new Date().toLocaleDateString('ar-SA')}</p>
+                <p>تم الإنشاء في: ${new Date().toLocaleDateString('ar-IR')}</p>
                 <p>هذا المستند تم إنشاؤه تلقائياً ولا يحتاج إلى توقيع</p>
             </div>
         </body>

@@ -397,11 +397,11 @@ const SalaryForm = ({ employee: initialEmployee, onSuccess, onCancel, salary }) 
                                 <Select
                                     options={employees.map(emp => ({
                                         value: emp._id,
-                                        label: `${emp.fullName} - ${emp.employeeId} (${emp.salary} ر.س)`
+                                        label: `${emp.fullName} - ${emp.employeeId} (${emp.salary} د.ع)`
                                     }))}
                                     value={selectedEmployee ? {
                                         value: selectedEmployee._id,
-                                        label: `${selectedEmployee.fullName} - ${selectedEmployee.employeeId} (${selectedEmployee.salary} ر.س)`
+                                        label: `${selectedEmployee.fullName} - ${selectedEmployee.employeeId} (${selectedEmployee.salary} د.ع)`
                                     } : null}
                                     onChange={(option) => {
                                         const emp = employees.find(e => e._id === option.value);
@@ -660,7 +660,7 @@ const SalaryForm = ({ employee: initialEmployee, onSuccess, onCancel, salary }) 
                                         </div>
                                         <div>
                                             <label className="block text-sm text-green-700 mb-1">المبلغ</label>
-                                            <p className="font-bold text-green-800">{allowance.amount.toFixed(2)} ر.س</p>
+                                            <p className="font-bold text-green-800">{allowance.amount.toFixed(2)} د.ع</p>
                                         </div>
                                     </div>
                                     <div className="mb-3">
@@ -755,7 +755,7 @@ const SalaryForm = ({ employee: initialEmployee, onSuccess, onCancel, salary }) 
                                         </div>
                                         <div>
                                             <label className="block text-sm text-red-700 mb-1">المبلغ</label>
-                                            <p className="font-bold text-red-800">{deduction.amount.toFixed(2)} ر.س</p>
+                                            <p className="font-bold text-red-800">{deduction.amount.toFixed(2)} د.ع</p>
                                         </div>
                                     </div>
                                     <div className="mb-3">
@@ -866,25 +866,25 @@ const SalaryForm = ({ employee: initialEmployee, onSuccess, onCancel, salary }) 
                         <div className="bg-white bg-opacity-20 p-4 rounded-xl backdrop-blur-sm">
                             <h4 className="font-medium text-blue-100 mb-2">الراتب الأساسي</h4>
                             <p className="text-2xl font-bold">
-                                {formik.values.baseSalary.toFixed(2)} ر.س
+                                {formik.values.baseSalary.toFixed(2)} د.ع
                             </p>
-                        </div>
+                        </div> 
                         <div className="bg-white bg-opacity-20 p-4 rounded-xl backdrop-blur-sm">
                             <h4 className="font-medium text-green-100 mb-2">إجمالي البدلات</h4>
                             <p className="text-2xl font-bold text-green-300">
-                                +{formik.values.allowances.reduce((sum, a) => sum + a.amount, 0).toFixed(2)} ر.س
+                                +{formik.values.allowances.reduce((sum, a) => sum + a.amount, 0).toFixed(2)} د.ع
                             </p>
                         </div>
                         <div className="bg-white bg-opacity-20 p-4 rounded-xl backdrop-blur-sm">
                             <h4 className="font-medium text-red-100 mb-2">إجمالي الخصومات</h4>
                             <p className="text-2xl font-bold text-red-300">
-                                -{(formik.values.deductions.reduce((sum, d) => sum + d.amount, 0) + formik.values.socialInsurance.amount).toFixed(2)} ر.س
+                                -{(formik.values.deductions.reduce((sum, d) => sum + d.amount, 0) + formik.values.socialInsurance.amount).toFixed(2)} د.ع
                             </p>
                         </div>
                         <div className="bg-white bg-opacity-30 p-4 rounded-xl backdrop-blur-sm border-2 border-yellow-400">
                             <h4 className="font-medium text-yellow-100 mb-2">صافي الراتب</h4>
                             <p className="text-3xl font-bold text-yellow-300">
-                                {calculateNetSalary().toFixed(2)} ر.س
+                                {calculateNetSalary().toFixed(2)} د.ع
                             </p>
                         </div>
                     </div>
