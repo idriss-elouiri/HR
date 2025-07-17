@@ -32,7 +32,10 @@ const Employees = () => {
 
     const handleDelete = async (id) => {
         try {
-            const response = await fetch(`${apiUrl}/api/employees/${id}`, { method: 'DELETE' });
+            const response = await fetch(`${apiUrl}/api/employees/${id}`, {
+                method: 'DELETE',
+                credentials: 'include',
+            });
             if (!response.ok) throw new Error('فشل في الحذف');
 
             toast.success('تم حذف الموظف بنجاح');
@@ -82,7 +85,7 @@ const Employees = () => {
                                 <h2 className="text-xl font-bold text-blue-800">
                                     {selectedEmployee ? 'تعديل بيانات الموظف' : 'إضافة موظف جديد'}
                                 </h2>
-                                <button 
+                                <button
                                     onClick={() => setFormOpen(false)}
                                     className="p-2 rounded-full hover:bg-gray-100 transition-colors"
                                 >
@@ -100,9 +103,9 @@ const Employees = () => {
                     </div>
                 )}
 
-                <ToastContainer 
-                    position="top-center" 
-                    rtl={true} 
+                <ToastContainer
+                    position="top-center"
+                    rtl={true}
                     toastClassName="!bg-white !text-gray-800 !shadow-lg !rounded-xl !border !border-gray-200"
                     progressClassName="!bg-gradient-to-r !from-blue-500 !to-indigo-600"
                 />

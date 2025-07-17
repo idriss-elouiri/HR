@@ -99,20 +99,7 @@ const Dashboard = () => {
                             نظرة عامة على إحصائيات النظام والأنشطة الحديثة - {currentMonth}
                         </p>
                     </div>
-                    <div className="flex gap-2 mt-4 md:mt-0">
-                        <Button
-                            className="bg-gradient-to-r from-emerald-500 to-emerald-600 text-white font-bold shadow-lg shadow-emerald-500/20"
-                            startContent={<FaFileExcel className="text-white" />}
-                        >
-                            تصدير Excel
-                        </Button>
-                        <Button
-                            className="bg-gradient-to-r from-rose-600 to-rose-700 text-white font-bold shadow-lg shadow-rose-500/20"
-                            startContent={<FaFilePdf className="text-white" />}
-                        >
-                            تصدير PDF
-                        </Button>
-                    </div>
+
                 </div>
 
                 <Tabs

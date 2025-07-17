@@ -74,7 +74,6 @@ const AbsenceForm = ({ absence, onSuccess, onCancel }) => {
             status: absence?.status || 'معلقة',
             notes: absence?.notes || ''
         },
-        validationSchema,
         onSubmit: async (values) => {
             setIsSubmitting(true);
             try {
