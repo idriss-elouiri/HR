@@ -1,12 +1,11 @@
-'use client';
+"use client"
+
 import React, { useState, useEffect } from 'react';
 import { FaUser, FaMoneyBillWave, FaClock, FaCalendarTimes, FaFileExcel, FaFilePdf, FaSearch, FaPrint } from 'react-icons/fa';
 import { MdOutlineArrowDropDown } from 'react-icons/md';
-import Sidebar from '../components/Sidebar';
-import Navbar from '../components/TopNavbar';
 import Chart from 'react-apexcharts';
 
-const AllReports = () => {
+const SystemReports = () => {
     const [activeTab, setActiveTab] = useState('employee');
     const [loading, setLoading] = useState(false);
     const [employees, setEmployees] = useState([]);
@@ -15,6 +14,7 @@ const AllReports = () => {
     const [absences, setAbsences] = useState([]);
     const [monthlyReport, setMonthlyReport] = useState([]);
     const [annualReport, setAnnualReport] = useState([]);
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
     const [filters, setFilters] = useState({
         employeeId: '',
@@ -23,7 +23,6 @@ const AllReports = () => {
         year: new Date().getFullYear(),
         status: ''
     });
-
     // Employee report chart data
     const employeeChartOptions = {
         chart: {
@@ -64,7 +63,7 @@ const AllReports = () => {
     const [employeeChartSeries, setEmployeeChartSeries] = useState([0, 0, 0]);
 
     // Financial report chart data
-    const financialChartOptions = {
+    const [financialChartOptions, setFinancialChartOptions] = useState({
         chart: {
             id: 'financial-chart',
             toolbar: { show: false },
@@ -89,7 +88,7 @@ const AllReports = () => {
             fontFamily: 'inherit',
             labels: { colors: '#6B7280' }
         }
-    };
+    });
 
     const [financialChartSeries, setFinancialChartSeries] = useState([
         { name: 'إجمالي الرواتب', data: [] },
@@ -103,17 +102,24 @@ const AllReports = () => {
             // 1. Fetch employee report
             const empQuery = new URLSearchParams({
                 page: 1,
-                limit: 1000,
-                search: '',
+                limit: 10, // جلب 10 سجلات فقط بدلاً من 1000
+                search: filters.search || '',
                 status: filters.status
             }).toString();
 
-            const empRes = await fetch(`/api/employees?${empQuery}`, {
+            // إصلاح مسار API هنا
+            const empRes = await fetch(`${apiUrl}/api/employees?${empQuery}`, {
                 credentials: 'include',
             });
-            if (!empRes.ok) throw new Error('Failed to fetch employees');
+
+            if (!empRes.ok) {
+                const errorData = await empRes.json();
+                throw new Error(errorData.message || 'Failed to fetch employees');
+            }
+
             const empData = await empRes.json();
             setEmployees(empData.data || []);
+
 
             // Calculate status counts for chart
             const active = empData.data.filter(e => e.employmentStatus === 'نشط').length;
@@ -128,7 +134,7 @@ const AllReports = () => {
                 status: filters.status
             }).toString();
 
-            const salRes = await fetch(`/api/salaries?${salQuery}`, {
+            const salRes = await fetch(`${apiUrl}/api/salaries?${salQuery}`, {
                 credentials: 'include',
             });
             if (!salRes.ok) throw new Error('Failed to fetch salaries');
@@ -161,7 +167,7 @@ const AllReports = () => {
             ]);
 
             // Update financial chart categories
-            financialChartOptions.xaxis.categories = categories.map(cat => {
+            const newCategories = categories.map(cat => {
                 const [year, month] = cat.split('-');
                 const monthNames = [
                     'يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو',
@@ -170,6 +176,14 @@ const AllReports = () => {
                 return `${monthNames[parseInt(month) - 1]} ${year}`;
             });
 
+            setFinancialChartOptions(prev => ({
+                ...prev,
+                xaxis: {
+                    ...prev.xaxis,
+                    categories: newCategories
+                }
+            }));
+
             // 3. Fetch absences report
             const absQuery = new URLSearchParams({
                 month: filters.month,
@@ -177,7 +191,7 @@ const AllReports = () => {
                 employeeId: filters.employeeId
             }).toString();
 
-            const absRes = await fetch(`/api/absences?${absQuery}`, {
+            const absRes = await fetch(`${apiUrl}/api/absences?${absQuery}`, {
                 credentials: 'include',
             });
             if (!absRes.ok) throw new Error('Failed to fetch absences');
@@ -190,7 +204,7 @@ const AllReports = () => {
                 year: filters.year
             }).toString();
 
-            const monthlyRes = await fetch(`/api/reports/monthly?${monthlyQuery}`, {
+            const monthlyRes = await fetch(`${apiUrl}/api/reports/monthly?${monthlyQuery}`, {
                 credentials: 'include',
             });
             if (!monthlyRes.ok) throw new Error('Failed to fetch monthly report');
@@ -198,7 +212,7 @@ const AllReports = () => {
             setMonthlyReport(monthlyData.data || []);
 
             // 5. Fetch annual report
-            const annualRes = await fetch(`/api/reports/annual/${filters.year}`, {
+            const annualRes = await fetch(`${apiUrl}/api/reports/annual/${filters.year}`, {
                 credentials: 'include',
             });
             if (!annualRes.ok) throw new Error('Failed to fetch annual report');
@@ -207,7 +221,6 @@ const AllReports = () => {
 
         } catch (error) {
             console.error('Error fetching reports:', error);
-            // يمكنك إضافة عرض رسالة خطأ للمستخدم هنا
         } finally {
             setLoading(false);
         }
@@ -219,14 +232,10 @@ const AllReports = () => {
 
     // Export functions
     const exportToExcel = (data, filename) => {
-        // Implementation for Excel export
-        console.log(`Exporting to Excel: ${filename}`);
         alert(`تم تصدير ${filename} إلى Excel بنجاح`);
     };
 
     const exportToPDF = (data, filename) => {
-        // Implementation for PDF export
-        console.log(`Exporting to PDF: ${filename}`);
         alert(`تم تصدير ${filename} إلى PDF بنجاح`);
     };
 
@@ -238,6 +247,7 @@ const AllReports = () => {
         const { name, value } = e.target;
         setFilters(prev => ({ ...prev, [name]: value }));
     };
+
     // Render functions for each report
     const renderEmployeeReport = () => (
         <div className="bg-white rounded-xl shadow-lg p-6">
@@ -341,7 +351,7 @@ const AllReports = () => {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
                 <div className="bg-gradient-to-r from-indigo-500 to-indigo-600 text-white rounded-xl p-6 shadow-lg">
                     <div className="text-3xl font-bold mb-2">
-                        {salaries.reduce((sum, salary) => sum + salary.netSalary, 0).toLocaleString('ar-EG')} ر.س
+                        {salaries.reduce((sum, salary) => sum + salary.netSalary, 0).toLocaleString('ar-EG')} د.ع
                     </div>
                     <div className="text-indigo-100">إجمالي الرواتب</div>
                 </div>
@@ -350,7 +360,7 @@ const AllReports = () => {
                     <div className="text-3xl font-bold mb-2">
                         {salaries.length > 0
                             ? (salaries.reduce((sum, salary) => sum + salary.netSalary, 0) / salaries.length).toLocaleString('ar-EG', { maximumFractionDigits: 0 })
-                            : 0} ر.س
+                            : 0} د.ع
                     </div>
                     <div className="text-emerald-100">متوسط الراتب</div>
                 </div>
@@ -396,16 +406,16 @@ const AllReports = () => {
                                     {salary.month}/{salary.year}
                                 </td>
                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                    {salary.baseSalary.toLocaleString('ar-EG')} ر.س
+                                    {salary.baseSalary.toLocaleString('ar-EG')} د.ع
                                 </td>
                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-green-500">
-                                    {salary.allowances.reduce((sum, a) => sum + a.amount, 0).toLocaleString('ar-EG')} ر.س
+                                    {salary.allowances?.reduce((sum, a) => sum + a.amount, 0).toLocaleString('ar-EG') || 0} د.ع
                                 </td>
                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-red-500">
-                                    {salary.deductions.reduce((sum, d) => sum + d.amount, 0).toLocaleString('ar-EG')} ر.س
+                                    {salary.deductions?.reduce((sum, d) => sum + d.amount, 0).toLocaleString('ar-EG') || 0} د.ع
                                 </td>
                                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                    {salary.netSalary.toLocaleString('ar-EG')} ر.س
+                                    {salary.netSalary.toLocaleString('ar-EG')} د.ع
                                 </td>
                                 <td className="px-6 py-4 whitespace-nowrap">
                                     <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${salary.status === 'مسددة' ? 'bg-green-100 text-green-800' :
@@ -603,227 +613,222 @@ const AllReports = () => {
     );
 
     return (
-        <div className="flex h-screen bg-gray-100">
-            <Sidebar />
+        <div className="flex flex-col h-screen bg-gray-100">
 
-            <div className="flex flex-col flex-1 overflow-hidden">
-                <Navbar />
+            <main className="flex-1 overflow-y-auto p-4 md:p-6 bg-gray-50">
+                <div className="mb-6">
+                    <h1 className="text-3xl font-bold text-gray-800">نظام التقارير</h1>
+                    <p className="text-gray-600 mt-2">إدارة وعرض جميع التقارير المتعلقة بالموظفين والعمليات</p>
+                </div>
 
-                <main className="flex-1 overflow-y-auto p-4 md:p-6 bg-gray-50">
-                    <div className="mb-6">
-                        <h1 className="text-3xl font-bold text-gray-800">نظام التقارير</h1>
-                        <p className="text-gray-600 mt-2">إدارة وعرض جميع التقارير المتعلقة بالموظفين والعمليات</p>
-                    </div>
-
-                    {/* Filters */}
-                    <div className="bg-white rounded-xl shadow-lg p-4 mb-6">
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">رقم الموظف</label>
-                                <div className="relative">
-                                    <input
-                                        type="text"
-                                        name="employeeId"
-                                        value={filters.employeeId}
-                                        onChange={handleFilterChange}
-                                        className="w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                                        placeholder="ابحث برقم الموظف"
-                                    />
-                                    <FaSearch className="absolute left-3 top-3 text-gray-400" />
-                                </div>
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">الشهر</label>
-                                <select
-                                    name="month"
-                                    value={filters.month}
-                                    onChange={handleFilterChange}
-                                    className="w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                                >
-                                    <option value="1">يناير</option>
-                                    <option value="2">فبراير</option>
-                                    <option value="3">مارس</option>
-                                    <option value="4">أبريل</option>
-                                    <option value="5">مايو</option>
-                                    <option value="6">يونيو</option>
-                                    <option value="7">يوليو</option>
-                                    <option value="8">أغسطس</option>
-                                    <option value="9">سبتمبر</option>
-                                    <option value="10">أكتوبر</option>
-                                    <option value="11">نوفمبر</option>
-                                    <option value="12">ديسمبر</option>
-                                </select>
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">السنة</label>
+                {/* Filters */}
+                <div className="bg-white rounded-xl shadow-lg p-4 mb-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">رقم الموظف</label>
+                            <div className="relative">
                                 <input
-                                    type="number"
-                                    name="year"
-                                    value={filters.year}
+                                    type="text"
+                                    name="employeeId"
+                                    value={filters.employeeId}
                                     onChange={handleFilterChange}
-                                    min="2000"
-                                    max="2100"
                                     className="w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                    placeholder="ابحث برقم الموظف"
                                 />
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">الحالة</label>
-                                <select
-                                    name="status"
-                                    value={filters.status}
-                                    onChange={handleFilterChange}
-                                    className="w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                                >
-                                    <option value="">الكل</option>
-                                    <option value="نشط">نشط</option>
-                                    <option value="موقوف">موقوف</option>
-                                    <option value="مفصول">مفصول</option>
-                                </select>
+                                <FaSearch className="absolute left-3 top-3 text-gray-400" />
                             </div>
                         </div>
-                    </div>
 
-                    {/* Tabs */}
-                    <div className="flex overflow-x-auto mb-6 border-b border-gray-200">
-                        <button
-                            onClick={() => setActiveTab('employee')}
-                            className={`px-4 py-2 text-sm font-medium rounded-t-lg flex items-center gap-2 ${activeTab === 'employee'
-                                ? 'bg-white border-t border-l border-r border-gray-200 text-indigo-600'
-                                : 'text-gray-500 hover:text-gray-700'
-                                }`}
-                        >
-                            <FaUser className="text-lg" />
-                            تقرير الموظفين
-                        </button>
-
-                        <button
-                            onClick={() => setActiveTab('financial')}
-                            className={`px-4 py-2 text-sm font-medium rounded-t-lg flex items-center gap-2 ${activeTab === 'financial'
-                                ? 'bg-white border-t border-l border-r border-gray-200 text-indigo-600'
-                                : 'text-gray-500 hover:text-gray-700'
-                                }`}
-                        >
-                            <FaMoneyBillWave className="text-lg" />
-                            التقارير المالية
-                        </button>
-
-                        <button
-                            onClick={() => setActiveTab('attendance')}
-                            className={`px-4 py-2 text-sm font-medium rounded-t-lg flex items-center gap-2 ${activeTab === 'attendance'
-                                ? 'bg-white border-t border-l border-r border-gray-200 text-indigo-600'
-                                : 'text-gray-500 hover:text-gray-700'
-                                }`}
-                        >
-                            <FaClock className="text-lg" />
-                            الحضور والانصراف
-                        </button>
-
-                        <button
-                            onClick={() => setActiveTab('absences')}
-                            className={`px-4 py-2 text-sm font-medium rounded-t-lg flex items-center gap-2 ${activeTab === 'absences'
-                                ? 'bg-white border-t border-l border-r border-gray-200 text-indigo-600'
-                                : 'text-gray-500 hover:text-gray-700'
-                                }`}
-                        >
-                            <FaCalendarTimes className="text-lg" />
-                            الغياب والتأخيرات
-                        </button>
-                    </div>
-
-                    {/* Loading indicator */}
-                    {loading && (
-                        <div className="flex justify-center items-center h-64">
-                            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">الشهر</label>
+                            <select
+                                name="month"
+                                value={filters.month}
+                                onChange={handleFilterChange}
+                                className="w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                            >
+                                <option value="1">يناير</option>
+                                <option value="2">فبراير</option>
+                                <option value="3">مارس</option>
+                                <option value="4">أبريل</option>
+                                <option value="5">مايو</option>
+                                <option value="6">يونيو</option>
+                                <option value="7">يوليو</option>
+                                <option value="8">أغسطس</option>
+                                <option value="9">سبتمبر</option>
+                                <option value="10">أكتوبر</option>
+                                <option value="11">نوفمبر</option>
+                                <option value="12">ديسمبر</option>
+                            </select>
                         </div>
-                    )}
 
-                    {/* Tab content */}
-                    {!loading && (
-                        <>
-                            {activeTab === 'employee' && renderEmployeeReport()}
-                            {activeTab === 'financial' && renderFinancialReport()}
-                            {activeTab === 'attendance' && renderAttendanceReport()}
-                            {activeTab === 'absences' && renderAbsencesReport()}
-                        </>
-                    )}
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">السنة</label>
+                            <input
+                                type="number"
+                                name="year"
+                                value={filters.year}
+                                onChange={handleFilterChange}
+                                min="2000"
+                                max="2100"
+                                className="w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                            />
+                        </div>
 
-                    {/* Monthly and Annual Reports */}
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
-                        <div className="bg-white rounded-xl shadow-lg p-6">
-                            <div className="flex justify-between items-center mb-4">
-                                <h3 className="text-xl font-bold text-gray-800">التقرير الشهري</h3>
-                                <button
-                                    onClick={() => exportToExcel(monthlyReport, 'التقرير_الشهري')}
-                                    className="bg-indigo-100 hover:bg-indigo-200 text-indigo-700 px-3 py-1 rounded-lg text-sm"
-                                >
-                                    تصدير
-                                </button>
-                            </div>
-                            <div className="overflow-x-auto">
-                                <table className="min-w-full divide-y divide-gray-200">
-                                    <thead className="bg-gray-50">
-                                        <tr>
-                                            <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">الموظف</th>
-                                            <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">الإجازات (أيام)</th>
-                                            <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">الغياب (مرات)</th>
-                                            <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">ساعات الغياب</th>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">الحالة</label>
+                            <select
+                                name="status"
+                                value={filters.status}
+                                onChange={handleFilterChange}
+                                className="w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                            >
+                                <option value="">الكل</option>
+                                <option value="نشط">نشط</option>
+                                <option value="موقوف">موقوف</option>
+                                <option value="مفصول">مفصول</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Tabs */}
+                <div className="flex overflow-x-auto mb-6 border-b border-gray-200">
+                    <button
+                        onClick={() => setActiveTab('employee')}
+                        className={`px-4 py-2 text-sm font-medium rounded-t-lg flex items-center gap-2 ${activeTab === 'employee'
+                            ? 'bg-white border-t border-l border-r border-gray-200 text-indigo-600'
+                            : 'text-gray-500 hover:text-gray-700'
+                            }`}
+                    >
+                        <FaUser className="text-lg" />
+                        تقرير الموظفين
+                    </button>
+
+                    <button
+                        onClick={() => setActiveTab('financial')}
+                        className={`px-4 py-2 text-sm font-medium rounded-t-lg flex items-center gap-2 ${activeTab === 'financial'
+                            ? 'bg-white border-t border-l border-r border-gray-200 text-indigo-600'
+                            : 'text-gray-500 hover:text-gray-700'
+                            }`}
+                    >
+                        <FaMoneyBillWave className="text-lg" />
+                        التقارير المالية
+                    </button>
+
+                    <button
+                        onClick={() => setActiveTab('attendance')}
+                        className={`px-4 py-2 text-sm font-medium rounded-t-lg flex items-center gap-2 ${activeTab === 'attendance'
+                            ? 'bg-white border-t border-l border-r border-gray-200 text-indigo-600'
+                            : 'text-gray-500 hover:text-gray-700'
+                            }`}
+                    >
+                        <FaClock className="text-lg" />
+                        الحضور والانصراف
+                    </button>
+
+                    <button
+                        onClick={() => setActiveTab('absences')}
+                        className={`px-4 py-2 text-sm font-medium rounded-t-lg flex items-center gap-2 ${activeTab === 'absences'
+                            ? 'bg-white border-t border-l border-r border-gray-200 text-indigo-600'
+                            : 'text-gray-500 hover:text-gray-700'
+                            }`}
+                    >
+                        <FaCalendarTimes className="text-lg" />
+                        الغياب والتأخيرات
+                    </button>
+                </div>
+
+                {/* Loading indicator */}
+                {loading && (
+                    <div className="flex justify-center items-center h-64">
+                        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
+                    </div>
+                )}
+
+                {/* Tab content */}
+                {!loading && (
+                    <>
+                        {activeTab === 'employee' && renderEmployeeReport()}
+                        {activeTab === 'financial' && renderFinancialReport()}
+                        {activeTab === 'attendance' && renderAttendanceReport()}
+                        {activeTab === 'absences' && renderAbsencesReport()}
+                    </>
+                )}
+
+                {/* Monthly and Annual Reports */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+                    <div className="bg-white rounded-xl shadow-lg p-6">
+                        <div className="flex justify-between items-center mb-4">
+                            <h3 className="text-xl font-bold text-gray-800">التقرير الشهري</h3>
+                            <button
+                                onClick={() => exportToExcel(monthlyReport, 'التقرير_الشهري')}
+                                className="bg-indigo-100 hover:bg-indigo-200 text-indigo-700 px-3 py-1 rounded-lg text-sm"
+                            >
+                                تصدير
+                            </button>
+                        </div>
+                        <div className="overflow-x-auto">
+                            <table className="min-w-full divide-y divide-gray-200">
+                                <thead className="bg-gray-50">
+                                    <tr>
+                                        <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">الموظف</th>
+                                        <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">الإجازات (أيام)</th>
+                                        <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">الغياب (مرات)</th>
+                                        <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">ساعات الغياب</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="bg-white divide-y divide-gray-200">
+                                    {monthlyReport.slice(0, 4).map((item, index) => (
+                                        <tr key={index} className={index % 2 === 0 ? 'bg-gray-50' : 'bg-white'}>
+                                            <td className="px-4 py-2 whitespace-nowrap text-sm font-medium text-gray-900">{item.fullName}</td>
+                                            <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-500">{item.totalLeaves}</td>
+                                            <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-500">{item.totalAbsences}</td>
+                                            <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-500">{item.totalHours}</td>
                                         </tr>
-                                    </thead>
-                                    <tbody className="bg-white divide-y divide-gray-200">
-                                        {monthlyReport.slice(0, 4).map((item, index) => (
-                                            <tr key={index} className={index % 2 === 0 ? 'bg-gray-50' : 'bg-white'}>
-                                                <td className="px-4 py-2 whitespace-nowrap text-sm font-medium text-gray-900">{item.fullName}</td>
-                                                <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-500">{item.totalLeaves}</td>
-                                                <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-500">{item.totalAbsences}</td>
-                                                <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-500">{item.totalHours}</td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-
-                        <div className="bg-white rounded-xl shadow-lg p-6">
-                            <div className="flex justify-between items-center mb-4">
-                                <h3 className="text-xl font-bold text-gray-800">التقرير السنوي ({filters.year})</h3>
-                                <button
-                                    onClick={() => exportToExcel(annualReport, 'التقرير_السنوي')}
-                                    className="bg-indigo-100 hover:bg-indigo-200 text-indigo-700 px-3 py-1 rounded-lg text-sm"
-                                >
-                                    تصدير
-                                </button>
-                            </div>
-                            <div className="overflow-x-auto">
-                                <table className="min-w-full divide-y divide-gray-200">
-                                    <thead className="bg-gray-50">
-                                        <tr>
-                                            <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">الموظف</th>
-                                            <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">الإجازات (أيام)</th>
-                                            <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">الغياب (مرات)</th>
-                                            <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">ساعات الغياب</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="bg-white divide-y divide-gray-200">
-                                        {annualReport.slice(0, 4).map((item, index) => (
-                                            <tr key={index} className={index % 2 === 0 ? 'bg-gray-50' : 'bg-white'}>
-                                                <td className="px-4 py-2 whitespace-nowrap text-sm font-medium text-gray-900">{item.fullName}</td>
-                                                <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-500">{item.totalLeaves}</td>
-                                                <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-500">{item.totalAbsences}</td>
-                                                <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-500">{item.totalHours}</td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
+                                    ))}
+                                </tbody>
+                            </table>
                         </div>
                     </div>
-                </main>
-            </div>
+
+                    <div className="bg-white rounded-xl shadow-lg p-6">
+                        <div className="flex justify-between items-center mb-4">
+                            <h3 className="text-xl font-bold text-gray-800">التقرير السنوي ({filters.year})</h3>
+                            <button
+                                onClick={() => exportToExcel(annualReport, 'التقرير_السنوي')}
+                                className="bg-indigo-100 hover:bg-indigo-200 text-indigo-700 px-3 py-1 rounded-lg text-sm"
+                            >
+                                تصدير
+                            </button>
+                        </div>
+                        <div className="overflow-x-auto">
+                            <table className="min-w-full divide-y divide-gray-200">
+                                <thead className="bg-gray-50">
+                                    <tr>
+                                        <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">الموظف</th>
+                                        <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">الإجازات (أيام)</th>
+                                        <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">الغياب (مرات)</th>
+                                        <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">ساعات الغياب</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="bg-white divide-y divide-gray-200">
+                                    {annualReport.slice(0, 4).map((item, index) => (
+                                        <tr key={index} className={index % 2 === 0 ? 'bg-gray-50' : 'bg-white'}>
+                                            <td className="px-4 py-2 whitespace-nowrap text-sm font-medium text-gray-900">{item.fullName}</td>
+                                            <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-500">{item.totalLeaves}</td>
+                                            <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-500">{item.totalAbsences}</td>
+                                            <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-500">{item.totalHours}</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </main>
         </div>
     );
 };
 
-export default AllReports;
+export default SystemReports;

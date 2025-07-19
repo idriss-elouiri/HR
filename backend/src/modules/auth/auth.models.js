@@ -24,7 +24,15 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
-
+    isHR: {
+      type: Boolean,
+      default: false,
+    },
+    // إضافة حقل لربط المستخدم بالموظف
+    employee: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Employee",
+    },
   },
   { timestamps: true }
 );

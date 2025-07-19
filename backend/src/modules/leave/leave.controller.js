@@ -5,33 +5,42 @@ import { errorHandler } from "../../utils/error.js";
 
 export const createLeave = async (req, res, next) => {
   try {
-    // Use req.body.employee instead of req.body.employeeId
-    const leaveData = {
-      ...req.body,
-      employee: req.body.employee,
-      createdBy: req.user.id
-    };
+    let employeeId = req.body.employee;
 
-    // Validate employee exists
-    const employee = await Employee.findById(req.body.employee);
+    // إذا كان المستخدم موظف عادي، نستخدم معرف الموظف المرتبط بحسابه
+    if (!req.user.isAdmin && !req.user.isHR && req.user.employee) {
+      employeeId = req.user.employee;
+    }
+
+    // التحقق من وجود الموظف
+    const employee = await Employee.findById(employeeId);
     if (!employee) return next(errorHandler(404, "الموظف غير موجود"));
 
-    // Calculate duration automatically
+    // حساب مدة الإجازة
     const startDate = new Date(req.body.startDate);
     const endDate = new Date(req.body.endDate);
     const diffTime = Math.abs(endDate - startDate);
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
 
+    // إنشاء طلب الإجازة
     const leave = await Leave.create({
-      ...leaveData,
-      duration: diffDays
+      ...req.body,
+      employee: employeeId,
+      duration: diffDays,
+      createdBy: req.user.id,
+      // الموظفين العاديين لا يمكنهم تغيير حالة الطلب
+      status: req.user.isAdmin || req.user.isHR ? req.body.status : "معلقة",
     });
 
     res.status(201).json({
       success: true,
-      data: leave
+      data: leave,
     });
   } catch (error) {
+    if (error.code === 11000) {
+      const field = Object.keys(error.keyPattern)[0];
+      return next(errorHandler(400, `هذا ${field} مسجل مسبقاً`));
+    }
     next(error);
   }
 };
@@ -58,7 +67,7 @@ export const getLeaves = async (req, res, next) => {
 
     res.status(200).json({
       success: true,
-      data: leaves
+      data: leaves,
     });
   } catch (error) {
     next(error);
@@ -88,7 +97,7 @@ export const updateLeave = async (req, res, next) => {
 
     res.status(200).json({
       success: true,
-      data: updatedLeave
+      data: updatedLeave,
     });
   } catch (error) {
     next(error);
@@ -104,7 +113,7 @@ export const updateLeaveStatus = async (req, res, next) => {
         status,
         notes,
         approvedBy: req.user.id,
-        approvedAt: Date.now()
+        approvedAt: Date.now(),
       },
       { new: true }
     );
@@ -115,7 +124,7 @@ export const updateLeaveStatus = async (req, res, next) => {
 
     res.status(200).json({
       success: true,
-      data: updatedLeave
+      data: updatedLeave,
     });
   } catch (error) {
     next(error);
@@ -132,21 +141,21 @@ export const getLeaveSummary = async (req, res, next) => {
           employee: mongoose.Types.ObjectId(employeeId),
           status: "موافق عليها",
           $expr: {
-            $eq: [{ $year: "$startDate" }, parseInt(year)]
-          }
-        }
+            $eq: [{ $year: "$startDate" }, parseInt(year)],
+          },
+        },
       },
       {
         $group: {
           _id: "$type",
-          totalDays: { $sum: "$duration" }
-        }
-      }
+          totalDays: { $sum: "$duration" },
+        },
+      },
     ]);
 
     res.status(200).json({
       success: true,
-      data: summary
+      data: summary,
     });
   } catch (error) {
     next(error);
@@ -162,7 +171,7 @@ export const deleteLeave = async (req, res, next) => {
 
     res.status(200).json({
       success: true,
-      message: "تم حذف الإجازة بنجاح"
+      message: "تم حذف الإجازة بنجاح",
     });
   } catch (error) {
     next(error);

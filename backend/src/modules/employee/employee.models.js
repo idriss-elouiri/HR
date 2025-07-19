@@ -6,156 +6,161 @@ const employeeSchema = new mongoose.Schema(
       type: String,
       required: [true, "رقم الموظف مطلوب"],
       unique: true,
-      trim: true
+      trim: true,
     },
     fullName: {
       type: String,
       required: [true, "الاسم الكامل مطلوب"],
-      trim: true
+      trim: true,
     },
     gender: {
       type: String,
       enum: ["ذكر", "أنثى"],
-      required: [true, "الجنس مطلوب"]
+      required: [true, "الجنس مطلوب"],
     },
     maritalStatus: {
       type: String,
       enum: ["أعزب", "متزوج", "مطلق", "أرمل"],
-      required: [true, "الحالة الاجتماعية مطلوبة"]
+      required: [true, "الحالة الاجتماعية مطلوبة"],
     },
     department: {
       type: String,
       required: [true, "القسم مطلوب"],
-      trim: true
+      trim: true,
     },
     jobTitle: {
       type: String,
       required: [true, "المسمى الوظيفي مطلوب"],
-      trim: true
+      trim: true,
     },
     contractType: {
       type: String,
       enum: ["دوام كامل", "دوام جزئي", "مؤقت"],
-      required: [true, "نوع العقد مطلوب"]
+      required: [true, "نوع العقد مطلوب"],
     },
     socialSecurityNumber: {
       type: String,
       required: [true, "رقم الضمان الاجتماعي مطلوب"],
       unique: true,
-      trim: true
+      trim: true,
     },
     nationalId: {
       type: String,
       required: [true, "رقم الهوية مطلوب"],
       unique: true,
-      trim: true
+      trim: true,
     },
     phone: {
       type: String,
       required: [true, "رقم الهاتف مطلوب"],
-      trim: true
+      trim: true,
     },
     email: {
       type: String,
       required: [true, "البريد الإلكتروني مطلوب"],
       unique: true,
       trim: true,
-      lowercase: true
+      lowercase: true,
     },
     address: {
       type: String,
       required: [true, "العنوان مطلوب"],
-      trim: true
+      trim: true,
     },
     hireDate: {
       type: Date,
-      required: [true, "تاريخ التوظيف مطلوب"]
+      required: [true, "تاريخ التوظيف مطلوب"],
     },
     employmentStatus: {
       type: String,
       enum: ["نشط", "موقوف", "مفصول"],
-      default: "نشط"
+      default: "نشط",
     },
     salary: {
       type: Number,
       required: [true, "الراتب مطلوب"],
-      min: [0, "الراتب يجب أن يكون رقم موجب"]
+      min: [0, "الراتب يجب أن يكون رقم موجب"],
     },
     bankAccount: {
       type: String,
       required: [true, "رقم الحساب البنكي مطلوب"],
-      trim: true
+      trim: true,
     },
     emergencyContact: {
       type: String,
       required: [true, "جهة الاتصال في حالات الطوارئ مطلوبة"],
-      trim: true
+      trim: true,
     },
     qualifications: {
       type: String,
       required: [true, "المؤهلات مطلوبة"],
-      trim: true
+      trim: true,
     },
     officialDocuments: {
       type: [String],
-      default: []
+      default: [],
     },
     employmentDuration: {
       type: Number, // عدد السنوات
-      default: 0
+      default: 0,
     },
     familyMembers: {
       type: Number,
-      default: 0
+      default: 0,
     },
     rank: {
       type: String,
-      trim: true
+      trim: true,
     },
     lastSalaryIncrease: {
       date: Date,
-      amount: Number
+      amount: Number,
     },
     appreciationLetters: {
       type: Boolean,
-      default: false
+      default: false,
     },
-    penalties: [{
-      date: Date,
-      description: String
-    }],
+    penalties: [
+      {
+        date: Date,
+        description: String,
+      },
+    ],
     leaveSettings: {
       سنوية: { type: Number, default: 21 },
       مرضية: { type: Number, default: 30 },
       أمومة: { type: Number, default: 60 },
-      بدون_راتب: { type: Number, default: 365 }
+      بدون_راتب: { type: Number, default: 365 },
     },
     shift: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'Shift'
+      ref: "Shift",
     },
     fingerprintId: {
       type: String,
       unique: true,
       trim: true,
-      sparse: true // يسمح بقيم null
+      sparse: true,
     },
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
-      required: true
+      required: true,
     },
   },
-
   {
     timestamps: true,
     toJSON: { virtuals: true },
-    toObject: { virtuals: true }
+    toObject: { virtuals: true },
   }
 );
 
 // Indexes for better performance
-employeeSchema.index({ fullName: "text", employeeId: "text", nationalId: "text" });
+employeeSchema.index({
+  fullName: "text",
+  employeeId: "text",
+  nationalId: "text",
+});
 
 const Employee = mongoose.model("Employee", employeeSchema);
 
