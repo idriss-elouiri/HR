@@ -2,6 +2,8 @@
 import Leave from "../leave/Leave.model.js";
 import Employee from "../employee/employee.models.js";
 import { errorHandler } from "../../utils/error.js";
+import User from "../auth/auth.models.js";
+import Notification from "../notification/notification.model.js";
 
 export const createLeave = async (req, res, next) => {
   try {
@@ -11,7 +13,6 @@ export const createLeave = async (req, res, next) => {
     if (!req.user.isAdmin && !req.user.isHR && req.user.employee) {
       employeeId = req.user.employee;
     }
-
     // التحقق من وجود الموظف
     const employee = await Employee.findById(employeeId);
     if (!employee) return next(errorHandler(404, "الموظف غير موجود"));
@@ -31,6 +32,29 @@ export const createLeave = async (req, res, next) => {
       // الموظفين العاديين لا يمكنهم تغيير حالة الطلب
       status: req.user.isAdmin || req.user.isHR ? req.body.status : "معلقة",
     });
+
+    if (!req.user.isAdmin && !req.user.isHR) {
+      // الحصول على جميع المديرين وموظفي HR
+      const adminsAndHR = await User.find({
+        $or: [{ isAdmin: true }, { isHR: true }],
+      });
+
+      // إنشاء إشعارات لكل منهم
+      const notifications = adminsAndHR.map((user) => ({
+        user: user._id,
+        title: "طلب إجازة جديد",
+        message: `الموظف ${employee.fullName} قام بطلب إجازة لمدة ${diffDays} أيام`,
+        link: `/leaves/${leave._id}`, // رابط لعرض طلب الإجازة
+        type: "leave",
+        metadata: {
+          leaveId: leave._id,
+          employeeId: employee._id,
+        },
+      }));
+
+      // حفظ الإشعارات في قاعدة البيانات
+      await Notification.insertMany(notifications);
+    }
 
     res.status(201).json({
       success: true,

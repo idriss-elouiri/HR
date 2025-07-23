@@ -7,6 +7,7 @@ import {
   deleteEmployee,
   updateEmployeeShift,
   loginEmployee,
+  getEmployeeByEmployeeId,
 } from "./employee.controller.js";
 import { validateZod } from "../../middlewares/validate-zod.js";
 import { employeeSchema } from "./employee.schema.js";
@@ -27,5 +28,6 @@ router.put(
 );
 router.delete("/:id", verifyToken, deleteEmployee);
 router.put("/:id/shift", verifyToken, updateEmployeeShift);
+router.get("/by-employee-id/:employeeId", getEmployeeByEmployeeId);
 
 export default router;

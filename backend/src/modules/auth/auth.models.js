@@ -28,10 +28,10 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
-    // إضافة حقل لربط المستخدم بالموظف
     employee: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Employee",
+      unique: true,
     },
   },
   { timestamps: true }

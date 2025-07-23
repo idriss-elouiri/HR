@@ -2,6 +2,7 @@ import Employee from "./employee.models.js";
 import { errorHandler } from "../../utils/error.js";
 import jwt from "jsonwebtoken";
 import User from "../auth/auth.models.js";
+import crypto from "crypto";
 
 export const createEmployee = async (req, res, next) => {
   try {
@@ -28,53 +29,55 @@ export const createEmployee = async (req, res, next) => {
     next(error);
   }
 };
-
-// src/modules/employee/employee.controller.js
 export const loginEmployee = async (req, res, next) => {
   const { fullName, email } = req.body;
+
   try {
-    const validEmployee = await Employee.findOne({ fullName });
+    // البحث باستخدام تعبير منتظم لتجاهل حالة الأحرف
+    const validEmployee = await Employee.findOne({
+      fullName: { $regex: new RegExp(`^${fullName}$`, "i") },
+      email: { $regex: new RegExp(`^${email}$`, "i") },
+    });
+
     if (!validEmployee) {
-      return next(errorHandler(404, "Employee not found"));
-    }
-    if (validEmployee.email !== email) {
-      return next(errorHandler(404, "invalid Employee"));
+      return next(errorHandler(404, "بيانات الموظف غير صحيحة"));
     }
 
-    // البحث عن مستخدم موجود أو إنشاء جديد
-    let user = await User.findOne({ email });
+    // البحث عن مستخدم مرتبط بهذا الموظف
+    let user = await User.findOne({ employee: validEmployee._id });
 
+    // إنشاء مستخدم جديد إذا لم يوجد
     if (!user) {
       user = new User({
         name: validEmployee.fullName,
         email: validEmployee.email,
-        password: "defaultPassword",
+        password: crypto.randomBytes(16).toString("hex"), // تم التصحيح هنا
         employee: validEmployee._id,
+        isHR: validEmployee.department === "HR", // مثال: تعيين الصلاحيات حسب القسم
       });
-      await user.save();
-    } else {
-      user.employee = validEmployee._id;
       await user.save();
     }
 
-    // إنشاء التوكن مع معلومات المستخدم
+    // إنشاء التوكن
     const token = jwt.sign(
       {
-        id: user._id, // استخدام id المستخدم وليس الموظف
+        id: user._id,
         isAdmin: user.isAdmin,
         isHR: user.isHR,
+        employeeId: validEmployee._id, // إضافة معرّف الموظف في التوكن
       },
       process.env.JWT_SECRET,
       { expiresIn: "7d" }
     );
 
+    // إرسال الاستجابة مع التوكن
     res
       .status(200)
       .cookie("access_token", token, {
         httpOnly: true,
-        sameSite: "None",
+        sameSite: "Strict",
         secure: process.env.NODE_ENV === "production",
-        maxAge: 7 * 24 * 60 * 60 * 1000, 
+        maxAge: 7 * 24 * 60 * 60 * 1000,
       })
       .json({
         _id: user._id,
@@ -82,12 +85,13 @@ export const loginEmployee = async (req, res, next) => {
         email: user.email,
         isAdmin: user.isAdmin,
         isHR: user.isHR,
-        employee: user.employee,
+        employee: validEmployee,
       });
   } catch (error) {
     next(error);
   }
 };
+
 export const getEmployees = async (req, res, next) => {
   try {
     const { page = 1, limit = 10, search = "", status } = req.query;
@@ -127,10 +131,10 @@ export const getEmployees = async (req, res, next) => {
     next(error);
   }
 };
-
 export const getEmployee = async (req, res, next) => {
   try {
-    const employee = await Employee.findById(req.params.id)
+    // استخدام employeeId بدلاً من _id
+    const employee = await Employee.findOne({ employeeId: req.params.id })
       .select("-__v")
       .populate("createdBy", "name email");
 
@@ -146,7 +150,6 @@ export const getEmployee = async (req, res, next) => {
     next(error);
   }
 };
-
 export const updateEmployee = async (req, res, next) => {
   try {
     const updatedEmployee = await Employee.findByIdAndUpdate(
@@ -211,5 +214,25 @@ export const deleteEmployee = async (req, res, next) => {
     });
   } catch (error) {
     next(error);
+  }
+};
+
+export const getEmployeeByEmployeeId = async (req, res, next) => {
+  try {
+    const employee = await Employee.findOne({
+      employeeId: req.params.employeeId,
+    }).select("-__v");
+
+    if (!employee) {
+      return next(errorHandler(404, "الموظف غير موجود"));
+    }
+
+    // إرسال رد واحد فقط
+    res.status(200).json({
+      success: true,
+      data: employee,
+    });
+  } catch (error) {
+    next(error); // استخدام next لنقل الخطأ
   }
 };
