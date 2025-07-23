@@ -59,7 +59,7 @@ const EmployeeLeaveRequest = () => {
 
         const payload = {
           ...values,
-          employee: currentUser._id, // استخدام _id مباشرةً
+          employee: currentUser.employee, // استخدام _id مباشرةً
           status: "معلقة",
           startDate: values.startDate.toISOString(),
           endDate: values.endDate.toISOString(),

@@ -17,6 +17,11 @@ import {
   FaChartLine,
   FaTimes,
   FaSkyatlas,
+  FaUser,
+  FaUserCog,
+  FaFileAlt,
+  FaClock,
+  FaBell,
 } from "react-icons/fa";
 import { MdPeopleAlt, MdSettings } from "react-icons/md";
 
@@ -24,7 +29,7 @@ const Sidebar = () => {
   const { currentUser } = useSelector((state) => state.user);
   const [collapsed, setCollapsed] = useState(false);
   const [activeLink, setActiveLink] = useState("");
-  console.log(currentUser.isHR);
+
   const toggleCollapse = () => {
     setCollapsed(!collapsed);
   };
@@ -37,6 +42,9 @@ const Sidebar = () => {
   const isAdmin = currentUser?.isAdmin;
   const isHR = currentUser?.isHR;
   const isEmployee = !isAdmin && !isHR;
+
+  // تحديد دور المستخدم للنص
+  const userRole = isAdmin ? "مشرف النظام" : isHR ? "موظف HR" : "موظف";
 
   return (
     <aside
@@ -53,9 +61,14 @@ const Sidebar = () => {
           <div className="bg-gradient-to-r from-amber-500 to-amber-600 p-2 rounded-xl">
             <FaUserTie size={24} />
           </div>
-          <h2 className="text-xl font-bold tracking-tight">
-            نظام الموارد البشرية
-          </h2>
+          <div>
+            <h2 className="text-xl font-bold tracking-tight">
+              نظام الموارد البشرية
+            </h2>
+            <p className="text-xs text-indigo-200 mt-1">
+              {currentUser?.name} - {userRole}
+            </p>
+          </div>
         </div>
 
         <button
@@ -86,7 +99,7 @@ const Sidebar = () => {
         </Link>
 
         {/* الموظفون - للمشرفين وموظفي HR فقط */}
-        {isAdmin && (
+        {(isAdmin || isHR) && (
           <Link
             href="/Employees"
             onClick={() => handleLinkClick("employees")}
@@ -106,7 +119,7 @@ const Sidebar = () => {
         )}
 
         {/* الرواتب المالية - للمشرفين وموظفي HR فقط */}
-        {isAdmin && (
+        {(isAdmin || isHR) && (
           <Link
             href="/Salaries"
             onClick={() => handleLinkClick("salaries")}
@@ -125,45 +138,26 @@ const Sidebar = () => {
           </Link>
         )}
 
-        {/* الإجازات والغياب - متاحة للجميع */}
-        {isAdmin && (
-          <Link
-            href="/LeavesAbsences"
-            onClick={() => handleLinkClick("leaves")}
-            className={`flex items-center gap-3 py-3 px-4 rounded-xl transition-all group ${
-              activeLink === "leaves"
-                ? "bg-gradient-to-r from-purple-500 to-purple-600 shadow-lg"
-                : "hover:bg-indigo-700"
-            }`}
-          >
-            <div className="p-2 rounded-lg bg-white/10 group-hover:bg-white/20 transition">
-              <FaCalendarAlt size={18} />
-            </div>
-            <span className={`${collapsed ? "hidden" : "block"}`}>
-              الإجازات والغياب
-            </span>
-          </Link>
-        )}
-        {isHR && (
-          <Link
-            href="/EmployeeLeaveRequest"
-            onClick={() => handleLinkClick("leaverequest")}
-            className={`flex items-center gap-3 py-3 px-4 rounded-xl transition-all group ${
-              activeLink === "leaverequest"
-                ? "bg-gradient-to-r from-purple-500 to-purple-600 shadow-lg"
-                : "hover:bg-indigo-700"
-            }`}
-          >
-            <div className="p-2 rounded-lg bg-white/10 group-hover:bg-white/20 transition">
-              <FaCalendarAlt size={18} />
-            </div>
-            <span className={`${collapsed ? "hidden" : "block"}`}>
-              طلب إجازة
-            </span>
-          </Link>
-        )}
+        {/* الإجازات والغياب - متاحة للجميع ولكن بصلاحيات مختلفة */}
+        <Link
+          href={isEmployee ? "/EmployeeLeaveRequest" : "/LeavesAbsences"}
+          onClick={() => handleLinkClick("leaves")}
+          className={`flex items-center gap-3 py-3 px-4 rounded-xl transition-all group ${
+            activeLink === "leaves"
+              ? "bg-gradient-to-r from-purple-500 to-purple-600 shadow-lg"
+              : "hover:bg-indigo-700"
+          }`}
+        >
+          <div className="p-2 rounded-lg bg-white/10 group-hover:bg-white/20 transition">
+            <FaCalendarAlt size={18} />
+          </div>
+          <span className={`${collapsed ? "hidden" : "block"}`}>
+            {isEmployee ? "طلب إجازة" : "الإجازات والغياب"}
+          </span>
+        </Link>
+
         {/* التقارير والإشعارات - للمشرفين وموظفي HR فقط */}
-        {isAdmin && (
+        {(isAdmin || isHR) && (
           <Link
             href="/Reports"
             onClick={() => handleLinkClick("reports")}
@@ -194,7 +188,7 @@ const Sidebar = () => {
             }`}
           >
             <div className="p-2 rounded-lg bg-white/10 group-hover:bg-white/20 transition">
-              <FaPlaneDeparture size={18} />
+              <FaClock size={18} />
             </div>
             <span className={`${collapsed ? "hidden" : "block"}`}>
               إدارة الشفتات
@@ -203,7 +197,7 @@ const Sidebar = () => {
         )}
 
         {/* الحضور والانصراف - للمشرفين وموظفي HR فقط */}
-        {isAdmin && (
+        {(isAdmin || isHR) && (
           <Link
             href="/ZKAttendance"
             onClick={() => handleLinkClick("attendance")}
@@ -241,6 +235,43 @@ const Sidebar = () => {
             </span>
           </Link>
         )}
+        {isAdmin && (
+          <Link
+            href="/Notifications"
+            onClick={() => handleLinkClick("Notifications")}
+            className={`flex items-center gap-3 py-3 px-4 rounded-xl transition-all group ${
+              activeLink === "notifications"
+                ? "bg-gradient-to-r from-gray-600 to-gray-700 shadow-lg"
+                : "hover:bg-indigo-700"
+            }`}
+          >
+            <div className="p-2 rounded-lg bg-white/10 group-hover:bg-white/20 transition">
+              <FaBell size={20} />
+            </div>
+            <span className={`${collapsed ? "hidden" : "block"}`}>
+              الإشعارات
+            </span>
+          </Link>
+        )}
+        {/* معلومات الموظف - للموظف العادي فقط */}
+        {isEmployee && (
+          <Link
+            href="/EmployeeInfo"
+            onClick={() => handleLinkClick("info")}
+            className={`flex items-center gap-3 py-3 px-4 rounded-xl transition-all group ${
+              activeLink === "info"
+                ? "bg-gradient-to-r from-blue-500 to-blue-600 shadow-lg"
+                : "hover:bg-indigo-700"
+            }`}
+          >
+            <div className="p-2 rounded-lg bg-white/10 group-hover:bg-white/20 transition">
+              <FaUser size={18} />
+            </div>
+            <span className={`${collapsed ? "hidden" : "block"}`}>
+              معلوماتي الشخصية
+            </span>
+          </Link>
+        )}
 
         {/* الإعدادات - متاحة للجميع ولكن بصلاحيات مختلفة */}
         <Link
@@ -257,6 +288,51 @@ const Sidebar = () => {
           </div>
           <span className={`${collapsed ? "hidden" : "block"}`}>الإعدادات</span>
         </Link>
+
+        {/* تسجيل الخروج - متاح للجميع */}
+        <Link
+          href="/logout"
+          onClick={() => handleLinkClick("logout")}
+          className={`flex items-center gap-3 py-3 px-4 rounded-xl transition-all group ${
+            activeLink === "logout"
+              ? "bg-gradient-to-r from-red-500 to-red-600 shadow-lg"
+              : "hover:bg-indigo-700"
+          }`}
+        >
+          <div className="p-2 rounded-lg bg-white/10 group-hover:bg-white/20 transition">
+            <FaSignOutAlt size={18} />
+          </div>
+          <span className={`${collapsed ? "hidden" : "block"}`}>
+            تسجيل الخروج
+          </span>
+        </Link>
+      </div>
+
+      {/* مؤشر الدور في أسفل السايد بار */}
+      <div
+        className={`p-4 border-t border-indigo-700 ${
+          collapsed ? "hidden" : "block"
+        }`}
+      >
+        <div className="flex items-center gap-2">
+          <div className="bg-indigo-700 p-1 rounded-full">
+            {isAdmin ? (
+              <FaUserCog className="text-amber-400" size={16} />
+            ) : isHR ? (
+              <FaUserTie className="text-emerald-400" size={16} />
+            ) : (
+              <FaUser className="text-blue-300" size={16} />
+            )}
+          </div>
+          <div>
+            <p className="text-xs text-indigo-300">دور المستخدم الحالي:</p>
+            <p className="text-sm font-medium">
+              {isAdmin && "مشرف النظام (صلاحيات كاملة)"}
+              {isHR && "موظف HR (صلاحيات جزئية)"}
+              {isEmployee && "موظف (عرض معلوماته فقط)"}
+            </p>
+          </div>
+        </div>
       </div>
     </aside>
   );

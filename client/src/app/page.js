@@ -23,6 +23,14 @@ export default function Home() {
         </li>
         <li>
           <Link
+            href="/EmployeesHrAuth"
+            className="block w-64 text-center py-4 px-6 bg-green-600 text-white text-lg font-semibold rounded-lg shadow hover:bg-green-700 transition"
+          >
+            تسجيل موظف HR
+          </Link>
+        </li>
+        <li>
+          <Link
             href="/EmployeesAuth"
             className="block w-64 text-center py-4 px-6 bg-green-600 text-white text-lg font-semibold rounded-lg shadow hover:bg-green-700 transition"
           >
