@@ -37,11 +37,23 @@ export const createSalary = async (req, res, next) => {
     const totalDeductions =
       req.body.deductions?.reduce((sum, d) => sum + (d.amount || 0), 0) || 0;
     const insuranceAmount = req.body.socialInsurance?.amount || 0;
+    const advanceDeductions = await getAdvanceDeductions(
+      employeeId,
+      month,
+      year
+    );
+
+    // حساب الراتب الصافي مع إضافة خصومات السلف
+    const totalAdvanceDeductions = advanceDeductions.reduce(
+      (sum, a) => sum + (a.amount || 0),
+      0
+    );
     const netSalary =
       (employee.salary || 0) +
       totalAllowances -
       totalDeductions -
-      insuranceAmount;
+      insuranceAmount -
+      totalAdvanceDeductions;
 
     const salaryData = {
       ...req.body,
@@ -62,7 +74,52 @@ export const createSalary = async (req, res, next) => {
     next(error);
   }
 };
+async function getAdvanceDeductions(employeeId, month, year) {
+  const advanceRequests = await AdvanceRequest.find({
+    employee: employeeId,
+    status: "موافق عليها",
+    isPaid: false,
+  });
 
+  const deductions = [];
+
+  for (const advance of advanceRequests) {
+    if (advance.repaymentMethod === "خصم مرة واحدة") {
+      deductions.push({
+        type: "سلفة",
+        amount: advance.amount,
+        description: `سلفة بتاريخ ${advance.dateRequested.toLocaleDateString(
+          "ar-IR"
+        )}`,
+        date: new Date(),
+        status: "مسددة",
+        isPaid: true,
+      });
+      advance.isPaid = true;
+      advance.status = "مسددة";
+      await advance.save();
+    } else if (advance.repaymentMethod === "تقسيط") {
+      const deductionAmount = advance.deductionPerMonth;
+      deductions.push({
+        type: "قسط سلفة",
+        amount: deductionAmount,
+        description: `قسط سلفة (${advance.installments} أقساط)`,
+        date: new Date(),
+        status: "مسددة جزئياً",
+        isPaid: false,
+      });
+      advance.installments -= 1;
+      advance.amount -= deductionAmount;
+      if (advance.installments === 0) {
+        advance.isPaid = true;
+        advance.status = "مسددة";
+      }
+      await advance.save();
+    }
+  }
+
+  return deductions;
+}
 export const getSalaries = async (req, res, next) => {
   try {
     const { employeeId, month, year, status } = req.query;
@@ -400,6 +457,36 @@ export const deleteSalary = async (req, res, next) => {
     res.status(200).json({
       success: true,
       message: "تم حذف سجل الراتب بنجاح",
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getEmployeeLastSalary = async (req, res, next) => {
+  try {
+    const { employeeId } = req.params;
+
+    const salary = await Salary.findOne({ employee: employeeId })
+      .sort({ year: -1, month: -1 })
+      .populate("employee", "fullName employeeId department")
+      .lean();
+
+    if (!salary) {
+      return next(errorHandler(404, "لا توجد بيانات راتب للموظف"));
+    }
+
+    // إضافة قيم افتراضية إذا كانت غير موجودة
+    const result = {
+      allowances: salary.allowances || [],
+      deductions: salary.deductions || [],
+      socialInsurance: salary.socialInsurance || { amount: 0, percentage: 10 },
+      ...salary,
+    };
+
+    res.status(200).json({
+      success: true,
+      data: result,
     });
   } catch (error) {
     next(error);

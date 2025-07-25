@@ -16,6 +16,26 @@ export const getNotifications = async (req, res, next) => {
   }
 };
 
+// دالة جديدة لجلب إشعارات الموظف
+export const getEmployeeNotifications = async (req, res, next) => {
+  try {
+    // جلب الإشعارات الخاصة بالموظف
+    const notifications = await Notification.find({
+      user: req.user.id,
+      type: "advance",
+    })
+      .sort({ createdAt: -1 })
+      .limit(20);
+
+    res.status(200).json({
+      success: true,
+      data: notifications,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 export const markAsRead = async (req, res, next) => {
   try {
     const notification = await Notification.findByIdAndUpdate(

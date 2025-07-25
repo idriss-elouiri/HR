@@ -22,6 +22,7 @@ import {
   FaFileAlt,
   FaClock,
   FaBell,
+  FaMoneyBillWave, // أيقونة جديدة
 } from "react-icons/fa";
 import { MdPeopleAlt, MdSettings } from "react-icons/md";
 
@@ -155,6 +156,26 @@ const Sidebar = () => {
             {isEmployee ? "طلب إجازة" : "الإجازات والغياب"}
           </span>
         </Link>
+
+        {/* طلب سلفة - للموظفين العاديين فقط */}
+        {isEmployee && (
+          <Link
+            href="/AdvanceRequest"
+            onClick={() => handleLinkClick("advance")}
+            className={`flex items-center gap-3 py-3 px-4 rounded-xl transition-all group ${
+              activeLink === "advance"
+                ? "bg-gradient-to-r from-teal-500 to-teal-600 shadow-lg"
+                : "hover:bg-indigo-700"
+            }`}
+          >
+            <div className="p-2 rounded-lg bg-white/10 group-hover:bg-white/20 transition">
+              <FaMoneyBillWave size={18} />
+            </div>
+            <span className={`${collapsed ? "hidden" : "block"}`}>
+              طلب سلفة
+            </span>
+          </Link>
+        )}
 
         {/* التقارير والإشعارات - للمشرفين وموظفي HR فقط */}
         {(isAdmin || isHR) && (

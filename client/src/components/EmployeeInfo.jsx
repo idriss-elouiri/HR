@@ -14,7 +14,13 @@ const EmployeeInfo = () => {
   const [formData, setFormData] = useState({});
   const [updating, setUpdating] = useState(false);
   const apiUrl = process.env.NEXT_PUBLIC_API_URL;
-  console.log(currentUser);
+
+  // إضافة الحالات الجديدة
+  const [allowances, setAllowances] = useState([]);
+  const [deductions, setDeductions] = useState([]);
+  const [socialInsurance, setSocialInsurance] = useState(null);
+  const [leaveSummary, setLeaveSummary] = useState({});
+
   useEffect(() => {
     const fetchEmployeeData = async () => {
       try {
@@ -40,9 +46,41 @@ const EmployeeInfo = () => {
         setLoading(false);
       }
     };
+    const fetchCompensationData = async () => {
+      try {
+        // جلب بيانات البدلات والخصومات
+        const salaryRes = await fetch(
+          `${apiUrl}/api/ ?employeeId=${currentUser.employee._id}&sort=-year,-month&limit=1`
+        );
+        const salaryData = await salaryRes.json();
+
+        if (salaryRes.ok && salaryData.data?.length > 0) {
+          const lastSalary = salaryData.data[0];
+          setAllowances(lastSalary.allowances || []);
+          setDeductions(lastSalary.deductions || []);
+          setSocialInsurance(lastSalary.socialInsurance || null);
+        }
+
+        // جلب رصيد الإجازات
+        const currentYear = new Date().getFullYear();
+        const leaveRes = await fetch(
+          `${apiUrl}/api/leaves/summary/${currentUser.employee._id}/${currentYear}`
+        );
+        const leaveData = await leaveRes.json();
+
+        if (leaveRes.ok) {
+          setLeaveSummary(leaveData.data || {});
+        }
+      } catch (error) {
+        console.error("فشل في جلب بيانات التعويضات:", error);
+      }
+    };
 
     fetchEmployeeData();
-  }, [currentUser]);
+    if (currentUser.employee?._id) {
+      fetchCompensationData();
+    }
+  }, [currentUser, apiUrl]);
 
   // معالجة التغيير في حقول النموذج
   const handleChange = (e) => {
@@ -107,6 +145,31 @@ const EmployeeInfo = () => {
       month: "long",
       day: "numeric",
     });
+  };
+
+  const LeaveBalanceCard = ({ type, total, used }) => {
+    const balance = total - used;
+    const percentage = Math.min(100, (used / total) * 100);
+
+    return (
+      <div className="bg-white border border-indigo-100 rounded-lg p-4 shadow-sm">
+        <div className="flex justify-between items-center">
+          <span className="text-gray-600">{type}</span>
+          <span className="text-xl font-bold text-indigo-700">
+            {balance} يوم
+          </span>
+        </div>
+        <div className="mt-1 text-sm text-gray-500">
+          {used} يوم مستخدم من {total}
+        </div>
+        <div className="mt-2 w-full bg-gray-200 rounded-full h-2">
+          <div
+            className="bg-indigo-600 h-2 rounded-full"
+            style={{ width: `${percentage}%` }}
+          ></div>
+        </div>
+      </div>
+    );
   };
 
   return (
@@ -249,7 +312,114 @@ const EmployeeInfo = () => {
               />
             </div>
           </div>
+          {/* قسم البدلات والخصومات والضمان الاجتماعي */}
+          <div className="mt-8">
+            <SectionTitle>البدلات والخصومات والضمان الاجتماعي</SectionTitle>
+            <div className="bg-white rounded-xl shadow-md p-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {/* البدلات */}
+                <div className="border rounded-lg p-4">
+                  <h4 className="font-semibold text-green-600 mb-4">البدلات</h4>
+                  {allowances.length > 0 ? (
+                    <table className="w-full">
+                      <thead>
+                        <tr className="text-right">
+                          <th className="pb-2">النوع</th>
+                          <th className="pb-2">المبلغ</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {allowances.map((allowance, index) => (
+                          <tr key={index} className="text-right border-t">
+                            <td className="py-2">{allowance.type}</td>
+                            <td className="py-2">
+                              {allowance.amount?.toLocaleString() || 0} د.ع
+                            </td>
+                          </tr>
+                        ))}
+                        <tr className="text-right font-semibold border-t">
+                          <td className="py-2">الإجمالي</td>
+                          <td className="py-2">
+                            {allowances
+                              .reduce((sum, a) => sum + (a.amount || 0), 0)
+                              .toLocaleString()}{" "}
+                            د.ع{" "}
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  ) : (
+                    <p className="text-gray-500">لا توجد بدلات</p>
+                  )}
+                </div>
 
+                {/* الخصومات */}
+                <div className="border rounded-lg p-4">
+                  <h4 className="font-semibold text-red-600 mb-4">الخصومات</h4>
+                  {deductions.length > 0 ? (
+                    <table className="w-full">
+                      <thead>
+                        <tr className="text-right">
+                          <th className="pb-2">النوع</th>
+                          <th className="pb-2">المبلغ</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {deductions.map((deduction, index) => (
+                          <tr key={index} className="text-right border-t">
+                            <td className="py-2">{deduction.type}</td>
+                            <td className="py-2">
+                              {deduction.amount?.toLocaleString() || 0} ر.س
+                            </td>
+                          </tr>
+                        ))}
+                        <tr className="text-right font-semibold border-t">
+                          <td className="py-2">الإجمالي</td>
+                          <td className="py-2">
+                            {deductions
+                              .reduce((sum, d) => sum + (d.amount || 0), 0)
+                              .toLocaleString()}{" "}
+                            د.ع{" "}
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  ) : (
+                    <p className="text-gray-500">لا توجد خصومات</p>
+                  )}
+                </div>
+
+                {/* الضمان الاجتماعي */}
+                <div className="border rounded-lg p-4">
+                  <h4 className="font-semibold text-blue-600 mb-4">
+                    الضمان الاجتماعي
+                  </h4>
+                  {socialInsurance ? (
+                    <div className="space-y-2">
+                      <div className="flex justify-between">
+                        <span>المبلغ:</span>
+                        <span>
+                          {socialInsurance.amount?.toLocaleString() || 0} ر.س
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>النسبة:</span>
+                        <span>{socialInsurance.percentage || 0}%</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>الحالة:</span>
+                        <span>مسدد</span>
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-gray-500">
+                      لا توجد بيانات للضمان الاجتماعي
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-8">
             {/* العمود الثالث */}
             <div>
@@ -278,7 +448,7 @@ const EmployeeInfo = () => {
               />
               <InfoField
                 label="الراتب"
-                value={`${employee.salary.toLocaleString()} ر.س`}
+                value={`${employee.salary.toLocaleString()} د.ع`}
                 name="salary"
                 type="number"
                 editing={editing}
@@ -292,24 +462,27 @@ const EmployeeInfo = () => {
               <div className="grid grid-cols-2 gap-4">
                 <LeaveBalanceCard
                   type="سنوية"
-                  balance={employee.leaveSettings?.سنوية || 21}
+                  total={employee.leaveSettings?.سنوية || 21}
+                  used={leaveSummary["سنوية"] || 0}
                 />
                 <LeaveBalanceCard
                   type="مرضية"
-                  balance={employee.leaveSettings?.مرضية || 30}
+                  total={employee.leaveSettings?.مرضية || 30}
+                  used={leaveSummary["مرضية"] || 0}
                 />
                 <LeaveBalanceCard
                   type="أمومة"
-                  balance={employee.leaveSettings?.أمومة || 60}
+                  total={employee.leaveSettings?.أمومة || 60}
+                  used={leaveSummary["أمومة"] || 0}
                 />
                 <LeaveBalanceCard
                   type="بدون راتب"
-                  balance={employee.leaveSettings?.بدون_راتب || 365}
+                  total={employee.leaveSettings?.بدون_راتب || 365}
+                  used={leaveSummary["بدون راتب"] || 0}
                 />
               </div>
             </div>
           </div>
-
           {/* معلومات إضافية */}
           <div className="mt-8">
             <SectionTitle>المؤهلات والخبرات</SectionTitle>
@@ -388,21 +561,6 @@ const InfoField = ({
     ) : (
       <p className="text-gray-800 font-medium">{value}</p>
     )}
-  </div>
-);
-
-const LeaveBalanceCard = ({ type, balance }) => (
-  <div className="bg-white border border-indigo-100 rounded-lg p-4 shadow-sm">
-    <div className="flex justify-between items-center">
-      <span className="text-gray-600">{type}</span>
-      <span className="text-xl font-bold text-indigo-700">{balance} يوم</span>
-    </div>
-    <div className="mt-2 w-full bg-gray-200 rounded-full h-2">
-      <div
-        className="bg-indigo-600 h-2 rounded-full"
-        style={{ width: `${Math.min(100, (balance / 100) * 100)}%` }}
-      ></div>
-    </div>
   </div>
 );
 

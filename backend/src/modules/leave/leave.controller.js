@@ -4,6 +4,7 @@ import Employee from "../employee/employee.models.js";
 import { errorHandler } from "../../utils/error.js";
 import User from "../auth/auth.models.js";
 import Notification from "../notification/notification.model.js";
+import mongoose from "mongoose";
 
 export const createLeave = async (req, res, next) => {
   try {
@@ -13,21 +14,42 @@ export const createLeave = async (req, res, next) => {
     if (!req.user.isAdmin && !req.user.isHR && req.user.employee) {
       employeeId = req.user.employee;
     }
+
     // التحقق من وجود الموظف
     const employee = await Employee.findById(employeeId);
     if (!employee) return next(errorHandler(404, "الموظف غير موجود"));
 
-    // حساب مدة الإجازة
-    const startDate = new Date(req.body.startDate);
-    const endDate = new Date(req.body.endDate);
-    const diffTime = Math.abs(endDate - startDate);
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+    let duration = 0;
+
+    // حساب مدة الإجازة بناءً على النوع
+    if (req.body.type === "زمنية") {
+      // حساب المدة بالساعات للإجازة الزمنية
+      const [startHours, startMinutes] = req.body.startTime
+        .split(":")
+        .map(Number);
+      const [endHours, endMinutes] = req.body.endTime.split(":").map(Number);
+
+      const startTotalMinutes = startHours * 60 + startMinutes;
+      const endTotalMinutes = endHours * 60 + endMinutes;
+
+      // حساب المدة مع مراعاة تخطي منتصف الليل
+      duration =
+        endTotalMinutes < startTotalMinutes
+          ? (24 * 60 - startTotalMinutes + endTotalMinutes) / 60
+          : (endTotalMinutes - startTotalMinutes) / 60;
+    } else {
+      // حساب المدة بالأيام لأنواع الإجازات الأخرى
+      const startDate = new Date(req.body.startDate);
+      const endDate = new Date(req.body.endDate);
+      const diffTime = Math.abs(endDate - startDate);
+      duration = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+    }
 
     // إنشاء طلب الإجازة
     const leave = await Leave.create({
       ...req.body,
       employee: employeeId,
-      duration: diffDays,
+      duration,
       createdBy: req.user.id,
       // الموظفين العاديين لا يمكنهم تغيير حالة الطلب
       status: req.user.isAdmin || req.user.isHR ? req.body.status : "معلقة",
@@ -159,10 +181,11 @@ export const getLeaveSummary = async (req, res, next) => {
   try {
     const { employeeId, year } = req.params;
 
+    // استخدم mongoose.Types.ObjectId بشكل صحيح
     const summary = await Leave.aggregate([
       {
         $match: {
-          employee: mongoose.Types.ObjectId(employeeId),
+          employee: new mongoose.Types.ObjectId(employeeId), // تم التصحيح هنا
           status: "موافق عليها",
           $expr: {
             $eq: [{ $year: "$startDate" }, parseInt(year)],
@@ -177,9 +200,15 @@ export const getLeaveSummary = async (req, res, next) => {
       },
     ]);
 
+    // تحويل البيانات إلى شكل أبسط
+    const result = {};
+    summary.forEach((item) => {
+      result[item._id] = item.totalDays;
+    });
+
     res.status(200).json({
       success: true,
-      data: summary,
+      data: result,
     });
   } catch (error) {
     next(error);

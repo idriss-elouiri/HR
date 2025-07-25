@@ -12,6 +12,7 @@ import shiftRouter from "./modules/shift/shift.route.js";
 import dashboardRouter from "./modules/dashboard/dashboard.route.js";
 import attendanceRouter from "./modules/attendance/attendance.route.js";
 import notificationsRouter from "./modules/notification/notification.route.js";
+import advanceRequestRouter from "./modules/advanceRequest/advanceRequest.route.js";
 import cookieParser from "cookie-parser";
 import dotenv from "dotenv";
 
@@ -42,6 +43,7 @@ app.use("/api/departments", departmentRouter);
 app.use("/api/shifts", shiftRouter);
 app.use("/api/dashboard", dashboardRouter);
 app.use("/api/notifications", notificationsRouter);
+app.use("/api/advance-requests", advanceRequestRouter);
 
 app.get("/*", (req, res) => {
   res.json("hello world");

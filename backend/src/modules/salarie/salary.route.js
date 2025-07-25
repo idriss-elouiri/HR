@@ -1,11 +1,12 @@
 import express from "express";
 import {
-    createSalary,
-    getSalaries,
-    getSalary,
-    updateSalary,
-    deleteSalary,
-    generatePayslip,
+  createSalary,
+  getSalaries,
+  getSalary,
+  updateSalary,
+  deleteSalary,
+  generatePayslip,
+  getEmployeeLastSalary,
 } from "./salary.controller.js";
 import { verifyToken } from "../../utils/verifyUser.js";
 
@@ -17,5 +18,6 @@ router.get("/:id", getSalary);
 router.put("/:id", verifyToken, updateSalary);
 router.delete("/:id", verifyToken, deleteSalary);
 router.get("/:id/payslip", generatePayslip);
+router.get("/employee-last/:employeeId", verifyToken, getEmployeeLastSalary);
 
 export default router;

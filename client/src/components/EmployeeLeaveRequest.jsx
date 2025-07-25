@@ -21,11 +21,13 @@ const leaveTypes = [
   { value: "أمومة", label: "إجازة أمومة" },
   { value: "بدون راتب", label: "إجازة بدون راتب" },
   { value: "طارئة", label: "إجازة طارئة" },
+  { value: "زمنية", label: "إجازة زمنية (ساعات)" }, // إضافة النوع الجديد
   { value: "أخرى", label: "إجازة أخرى" },
 ];
 
 const EmployeeLeaveRequest = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showTimeInputs, setShowTimeInputs] = useState(false);
   const { currentUser } = useSelector((state) => state.user);
   const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
@@ -89,12 +91,53 @@ const EmployeeLeaveRequest = () => {
 
   // حساب مدة الإجازة تلقائياً
   const calculateDuration = () => {
-    if (formik.values.startDate && formik.values.endDate) {
-      const diffTime = Math.abs(
-        formik.values.endDate - formik.values.startDate
-      );
-      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
-      formik.setFieldValue("duration", diffDays);
+    if (formik.values.type === "زمنية") {
+      // حساب المدة بالساعات للإجازة الزمنية
+      if (formik.values.startTime && formik.values.endTime) {
+        const [startHours, startMinutes] = formik.values.startTime
+          .split(":")
+          .map(Number);
+        const [endHours, endMinutes] = formik.values.endTime
+          .split(":")
+          .map(Number);
+
+        const startTotalMinutes = startHours * 60 + startMinutes;
+        const endTotalMinutes = endHours * 60 + endMinutes;
+
+        // إذا كان وقت النهاية قبل وقت البداية، نفترض أنه اليوم التالي
+        const totalMinutes =
+          endTotalMinutes < startTotalMinutes
+            ? 24 * 60 - startTotalMinutes + endTotalMinutes
+            : endTotalMinutes - startTotalMinutes;
+
+        const hours = Math.floor(totalMinutes / 60);
+        const minutes = totalMinutes % 60;
+
+        // تخزين المدة بالساعات مع الكسور
+        formik.setFieldValue("duration", (totalMinutes / 60).toFixed(2));
+      }
+    } else {
+      // حساب المدة بالأيام لأنواع الإجازات الأخرى
+      if (formik.values.startDate && formik.values.endDate) {
+        const diffTime = Math.abs(
+          formik.values.endDate - formik.values.startDate
+        );
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+        formik.setFieldValue("duration", diffDays);
+      }
+    }
+  };
+
+  // عند تغيير نوع الإجازة
+  const handleLeaveTypeChange = (e) => {
+    const type = e.target.value;
+    formik.handleChange(e);
+    setShowTimeInputs(type === "زمنية");
+
+    // إعادة تعيين القيم إذا تغير النوع
+    if (type !== "زمنية") {
+      formik.setFieldValue("startTime", "");
+      formik.setFieldValue("endTime", "");
     }
   };
 
@@ -114,7 +157,7 @@ const EmployeeLeaveRequest = () => {
             <select
               name="type"
               value={formik.values.type}
-              onChange={formik.handleChange}
+              onChange={handleLeaveTypeChange} // استخدم الدالة المعدلة
               className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             >
               {leaveTypes.map((type) => (
@@ -127,7 +170,9 @@ const EmployeeLeaveRequest = () => {
 
           <div>
             <label className="block text-gray-700 mb-2 font-medium">
-              المدة (أيام)
+              {formik.values.type === "زمنية"
+                ? "المدة (ساعات)"
+                : "المدة (أيام)"}
             </label>
             <input
               type="number"
@@ -138,48 +183,96 @@ const EmployeeLeaveRequest = () => {
             />
           </div>
 
-          <div>
-            <label className="block text-gray-700 mb-2 font-medium">
-              تاريخ البداية
-            </label>
-            <div className="relative">
-              <DatePicker
-                selected={formik.values.startDate}
-                onChange={(date) => {
-                  formik.setFieldValue("startDate", date);
-                  calculateDuration();
-                }}
-                dateFormat="yyyy/MM/dd"
-                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              />
-              <FaCalendarAlt className="absolute left-3 top-3.5 text-gray-400" />
-            </div>
-            {formik.touched.startDate && formik.errors.startDate && (
-              <p className="mt-1 text-red-600">{formik.errors.startDate}</p>
-            )}
-          </div>
+          {/* حقول الوقت للإجازة الزمنية */}
+          {showTimeInputs && (
+            <>
+              <div>
+                <label className="block text-gray-700 mb-2 font-medium">
+                  وقت البداية
+                </label>
+                <div className="relative">
+                  <input
+                    type="time"
+                    name="startTime"
+                    value={formik.values.startTime || ""}
+                    onChange={(e) => {
+                      formik.handleChange(e);
+                      calculateDuration();
+                    }}
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                  <FaClock className="absolute left-3 top-3.5 text-gray-400" />
+                </div>
+              </div>
 
-          <div>
-            <label className="block text-gray-700 mb-2 font-medium">
-              تاريخ النهاية
-            </label>
-            <div className="relative">
-              <DatePicker
-                selected={formik.values.endDate}
-                onChange={(date) => {
-                  formik.setFieldValue("endDate", date);
-                  calculateDuration();
-                }}
-                dateFormat="yyyy/MM/dd"
-                minDate={formik.values.startDate}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              />
-              <FaCalendarAlt className="absolute left-3 top-3.5 text-gray-400" />
-            </div>
-            {formik.touched.endDate && formik.errors.endDate && (
-              <p className="mt-1 text-red-600">{formik.errors.endDate}</p>
-            )}
-          </div>
+              <div>
+                <label className="block text-gray-700 mb-2 font-medium">
+                  وقت النهاية
+                </label>
+                <div className="relative">
+                  <input
+                    type="time"
+                    name="endTime"
+                    value={formik.values.endTime || ""}
+                    onChange={(e) => {
+                      formik.handleChange(e);
+                      calculateDuration();
+                    }}
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                  <FaClock className="absolute left-3 top-3.5 text-gray-400" />
+                </div>
+              </div>
+            </>
+          )}
+
+          {/* حقول التاريخ للإجازات العادية */}
+          {!showTimeInputs && (
+            <>
+              <div>
+                <label className="block text-gray-700 mb-2 font-medium">
+                  تاريخ البداية
+                </label>
+                <div className="relative">
+                  <DatePicker
+                    selected={formik.values.startDate}
+                    onChange={(date) => {
+                      formik.setFieldValue("startDate", date);
+                      calculateDuration();
+                    }}
+                    dateFormat="yyyy/MM/dd"
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                  <FaCalendarAlt className="absolute left-3 top-3.5 text-gray-400" />
+                </div>
+                {formik.touched.startDate && formik.errors.startDate && (
+                  <p className="mt-1 text-red-600">{formik.errors.startDate}</p>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-gray-700 mb-2 font-medium">
+                  تاريخ النهاية
+                </label>
+                <div className="relative">
+                  <DatePicker
+                    selected={formik.values.endDate}
+                    onChange={(date) => {
+                      formik.setFieldValue("endDate", date);
+                      calculateDuration();
+                    }}
+                    dateFormat="yyyy/MM/dd"
+                    minDate={formik.values.startDate}
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                  <FaCalendarAlt className="absolute left-3 top-3.5 text-gray-400" />
+                </div>
+                {formik.touched.endDate && formik.errors.endDate && (
+                  <p className="mt-1 text-red-600">{formik.errors.endDate}</p>
+                )}
+              </div>
+            </>
+          )}
         </div>
 
         <div>
