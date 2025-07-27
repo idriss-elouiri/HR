@@ -75,7 +75,7 @@ export const loginEmployee = async (req, res, next) => {
       .status(200)
       .cookie("access_token", token, {
         httpOnly: true,
-        sameSite: "Strict",
+        sameSite: "None",
         secure: process.env.NODE_ENV === "production",
         maxAge: 7 * 24 * 60 * 60 * 1000,
       })

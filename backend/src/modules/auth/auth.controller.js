@@ -36,7 +36,7 @@ export const register = async (req, res, next) => {
       .cookie("access_token", token, {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
-        sameSite: "Strict",
+        sameSite: "None", // حتى يُسمح له بالعمل بين دومينات مختلفة
         maxAge: 7 * 24 * 60 * 60 * 1000, // 7 أيام
       })
       .json(userWithoutPassword);
@@ -72,7 +72,7 @@ export const login = async (req, res, next) => {
       .cookie("access_token", token, {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
-        sameSite: "Strict",
+        sameSite: "None",
         maxAge: 7 * 24 * 60 * 60 * 1000, // 7 أيام
       })
       .json(userWithoutPassword);
@@ -84,4 +84,3 @@ export const login = async (req, res, next) => {
 export const logout = (req, res) => {
   res.clearCookie("access_token").status(200).json("تم تسجيل الخروج بنجاح");
 };
-
