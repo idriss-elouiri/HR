@@ -18,6 +18,7 @@ const TopNavbar = () => {
   const { currentUser } = useSelector((state) => state.user);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [notifications, setNotifications] = useState([]);
+  const [employeeNotificationCount, setEmployeeNotificationCount] = useState(0);
   const [darkMode, setDarkMode] = useState(false);
   const [currentTime, setCurrentTime] = useState("");
   const apiUrl = process.env.NEXT_PUBLIC_API_URL;
@@ -209,7 +210,12 @@ const TopNavbar = () => {
                       <Link
                         key={notification._id}
                         href={notification.link || "#"}
-                        onClick={() => markNotificationAsRead(notification._id)}
+                        onClick={() => {
+                          // Mark employee notifications as read
+                          if (notification.forEmployee) {
+                            markNotificationAsRead(notification._id);
+                          }
+                        }}
                       >
                         <div
                           className={`p-4 border-b border-gray-100 dark:border-gray-700 transition ${

@@ -42,9 +42,10 @@ export const createLeave = async (req, res, next) => {
       const startDate = new Date(req.body.startDate);
       const endDate = new Date(req.body.endDate);
       const diffTime = Math.abs(endDate - startDate);
-      duration = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+      duration = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); // إزالة +1
     }
 
+    const formattedDuration = duration.toFixed(2);
     // إنشاء طلب الإجازة
     const leave = await Leave.create({
       ...req.body,
@@ -61,12 +62,20 @@ export const createLeave = async (req, res, next) => {
         $or: [{ isAdmin: true }, { isHR: true }],
       });
 
-      // إنشاء إشعارات لكل منهم
+      let durationText;
+      if (req.body.type === "زمنية") {
+        const formattedDuration = duration.toFixed(2);
+        durationText = `${formattedDuration} ساعات`;
+      } else {
+        durationText = `${duration} أيام`;
+      }
+
+      // إنشاء الإشعارات
       const notifications = adminsAndHR.map((user) => ({
         user: user._id,
         title: "طلب إجازة جديد",
-        message: `الموظف ${employee.fullName} قام بطلب إجازة لمدة ${diffDays} أيام`,
-        link: `/leaves/${leave._id}`, // رابط لعرض طلب الإجازة
+        message: `الموظف ${employee.fullName} طلب إجازة ${req.body.type} لمدة ${durationText}`,
+        link: `/leaves/${leave._id}`,
         type: "leave",
         metadata: {
           leaveId: leave._id,

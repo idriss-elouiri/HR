@@ -12,9 +12,9 @@ export const createEmployee = async (req, res, next) => {
     }
     const employeeData = {
       ...req.body,
+      isHR: req.body.isHR || false,
       createdBy: req.user.id,
     };
-
     const employee = await Employee.create(employeeData);
 
     res.status(201).json({
@@ -51,9 +51,9 @@ export const loginEmployee = async (req, res, next) => {
       user = new User({
         name: validEmployee.fullName,
         email: validEmployee.email,
-        password: crypto.randomBytes(16).toString("hex"), // تم التصحيح هنا
+        password: crypto.randomBytes(16).toString("hex"),
         employee: validEmployee._id,
-        isHR: validEmployee.department === "HR", // مثال: تعيين الصلاحيات حسب القسم
+        isHR: validEmployee.isHR, // استخدام قيمة isHR من الموظف
       });
       await user.save();
     }

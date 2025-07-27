@@ -19,10 +19,9 @@ export const getNotifications = async (req, res, next) => {
 // دالة جديدة لجلب إشعارات الموظف
 export const getEmployeeNotifications = async (req, res, next) => {
   try {
-    // جلب الإشعارات الخاصة بالموظف
     const notifications = await Notification.find({
       user: req.user.id,
-      type: "advance",
+      forEmployee: true,
     })
       .sort({ createdAt: -1 })
       .limit(20);

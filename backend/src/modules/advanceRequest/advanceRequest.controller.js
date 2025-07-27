@@ -1,3 +1,8 @@
+import { errorHandler } from "../../utils/error.js";
+import User from "../auth/auth.models.js";
+import Employee from "../employee/employee.models.js";
+import Notification from "../notification/notification.model.js";
+import AdvanceRequest from "./advanceRequest.model.js";
 export const createAdvanceRequest = async (req, res, next) => {
   try {
     const { employee: employeeId, amount, reason } = req.body;
@@ -11,16 +16,6 @@ export const createAdvanceRequest = async (req, res, next) => {
     const employee = await Employee.findById(employeeId);
     if (!employee) {
       return next(errorHandler(404, "الموظف غير موجود"));
-    }
-
-    // للموظفين العاديين: يمكنهم طلب سلفة لأنفسهم فقط
-    if (!req.user.isAdmin && !req.user.isHR) {
-      if (!req.user.employee) {
-        return next(errorHandler(403, "حسابك غير مرتبط بموظف"));
-      }
-      if (req.user.employee.toString() !== employeeId) {
-        return next(errorHandler(403, "غير مسموح لك بطلب سلفة لموظف آخر"));
-      }
     }
 
     const advanceRequest = new AdvanceRequest({

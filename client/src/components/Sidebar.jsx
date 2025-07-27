@@ -82,23 +82,24 @@ const Sidebar = () => {
 
       <div className="p-4 space-y-1">
         {/* لوحة التحكم - متاحة للجميع */}
-        <Link
-          href="/Dashboard"
-          onClick={() => handleLinkClick("dashboard")}
-          className={`flex items-center gap-3 py-3 px-4 rounded-xl transition-all group ${
-            activeLink === "dashboard"
-              ? "bg-gradient-to-r from-amber-500 to-amber-600 shadow-lg"
-              : "hover:bg-indigo-700"
-          }`}
-        >
-          <div className="p-2 rounded-lg bg-white/10 group-hover:bg-white/20 transition">
-            <FaTachometerAlt size={20} />
-          </div>
-          <span className={`${collapsed ? "hidden" : "block"}`}>
-            لوحة التحكم
-          </span>
-        </Link>
-
+        {(isAdmin || isHR) && (
+          <Link
+            href="/Dashboard"
+            onClick={() => handleLinkClick("dashboard")}
+            className={`flex items-center gap-3 py-3 px-4 rounded-xl transition-all group ${
+              activeLink === "dashboard"
+                ? "bg-gradient-to-r from-amber-500 to-amber-600 shadow-lg"
+                : "hover:bg-indigo-700"
+            }`}
+          >
+            <div className="p-2 rounded-lg bg-white/10 group-hover:bg-white/20 transition">
+              <FaTachometerAlt size={20} />
+            </div>
+            <span className={`${collapsed ? "hidden" : "block"}`}>
+              لوحة التحكم
+            </span>
+          </Link>
+        )}
         {/* الموظفون - للمشرفين وموظفي HR فقط */}
         {(isAdmin || isHR) && (
           <Link

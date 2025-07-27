@@ -142,6 +142,10 @@ const employeeSchema = new mongoose.Schema(
       trim: true,
       sparse: true,
     },
+    isHR: {
+      type: Boolean,
+      default: false,
+    },
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
