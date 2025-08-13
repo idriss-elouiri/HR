@@ -1,5 +1,4 @@
 "use client";
-
 import Link from "next/link";
 import React, { useState, useEffect } from "react";
 import { useSelector } from "react-redux";
@@ -13,33 +12,47 @@ import {
   FaQuestionCircle,
 } from "react-icons/fa";
 import { motion, AnimatePresence } from "framer-motion";
+import { useRouter } from "next/navigation";
 
 const TopNavbar = () => {
   const { currentUser } = useSelector((state) => state.user);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [notifications, setNotifications] = useState([]);
-  const [employeeNotificationCount, setEmployeeNotificationCount] = useState(0);
+  const [unreadCount, setUnreadCount] = useState(0);
   const [darkMode, setDarkMode] = useState(false);
   const [currentTime, setCurrentTime] = useState("");
   const apiUrl = process.env.NEXT_PUBLIC_API_URL;
-
+  const router = useRouter();
   const isAdmin = currentUser?.isAdmin;
-  const isStaff = currentUser?.isStaff;
-  const isCustomer = currentUser?.isCustomer;
-
+  const isHR = currentUser?.isHR;
+  const isemployee = currentUser?.employee;
   const profileImage =
     (isAdmin && currentUser.profilePicture) ||
-    (isStaff && currentUser.profilePictureStaff) ||
-    (isCustomer && currentUser.profilePictureCustomer);
+    (isHR && currentUser.profilePicture) ||
+    (isemployee && currentUser.profilePicture);
 
   const fetchNotifications = async () => {
     try {
-      const response = await fetch(`${apiUrl}/api/notifications`, {
+      let endpoint;
+      let params = { unread: true };
+
+      if (currentUser?.employee) {
+        endpoint = `${apiUrl}/api/notifications/employee`;
+      } else {
+        endpoint = `${apiUrl}/api/notifications`;
+      }
+
+      const queryString = new URLSearchParams(params).toString();
+      const url = queryString ? `${endpoint}?${queryString}` : endpoint;
+
+      const response = await fetch(url, {
         credentials: "include",
       });
+
       const data = await response.json();
       if (data.success) {
         setNotifications(data.data);
+        setUnreadCount(data.data.filter((n) => !n.read).length);
       }
     } catch (error) {
       console.error("Error fetching notifications:", error);
@@ -48,14 +61,14 @@ const TopNavbar = () => {
 
   const markNotificationAsRead = async (id) => {
     try {
-      await fetch(`/api/notifications/${id}/read`, {
+      await fetch(`${apiUrl}/api/notifications/${id}/read`, {
         method: "PUT",
         credentials: "include",
       });
-      // تحديث حالة الإشعار محلياً
       setNotifications(
         notifications.map((n) => (n._id === id ? { ...n, read: true } : n))
       );
+      setUnreadCount(unreadCount - 1);
     } catch (error) {
       console.error("Error marking notification as read:", error);
     }
@@ -63,33 +76,8 @@ const TopNavbar = () => {
 
   useEffect(() => {
     fetchNotifications();
+    const interval = setInterval(fetchNotifications, 10000);
 
-    // تحديث الإشعارات كل 30 ثانية
-    const interval = setInterval(fetchNotifications, 30000);
-
-    return () => clearInterval(interval);
-  }, []);
-
-  // تحميل الإشعارات المزيفة
-  useEffect(() => {
-    const mockNotifications = [
-      { id: 1, title: "طلب إجازة جديد", time: "منذ 10 دقائق", read: false },
-      {
-        id: 2,
-        title: "تقرير الأداء الشهري جاهز",
-        time: "منذ ساعة",
-        read: true,
-      },
-      {
-        id: 3,
-        title: "اجتماع فريق الموارد البشرية",
-        time: "منذ يومين",
-        read: true,
-      },
-    ];
-    setNotifications(mockNotifications);
-
-    // تحديث الوقت الحالي
     const updateTime = () => {
       const now = new Date();
       const timeString = now.toLocaleTimeString("ar-EG", {
@@ -106,19 +94,18 @@ const TopNavbar = () => {
     };
 
     updateTime();
-    const interval = setInterval(updateTime, 60000);
+    const timeInterval = setInterval(updateTime, 60000);
 
-    return () => clearInterval(interval);
+    return () => {
+      clearInterval(interval);
+      clearInterval(timeInterval);
+    };
   }, []);
 
-  // تبديل وضع الليل
   const toggleDarkMode = () => {
     setDarkMode(!darkMode);
     document.documentElement.classList.toggle("dark", !darkMode);
   };
-
-  // حساب الإشعارات غير المقروءة
-  const unreadCount = notifications.filter((n) => !n.read).length;
 
   return (
     <header className="flex items-center justify-between p-4 bg-gradient-to-r from-indigo-600 to-indigo-700 dark:from-gray-800 dark:to-gray-900 shadow-lg text-white">
@@ -205,52 +192,42 @@ const TopNavbar = () => {
                 </div>
 
                 <div className="max-h-80 overflow-y-auto">
-                  {notifications.length > 0 ? (
-                    notifications.map((notification) => (
-                      <Link
-                        key={notification._id}
-                        href={notification.link || "#"}
-                        onClick={() => {
-                          // Mark employee notifications as read
-                          if (notification.forEmployee) {
-                            markNotificationAsRead(notification._id);
-                          }
-                        }}
-                      >
-                        <div
-                          className={`p-4 border-b border-gray-100 dark:border-gray-700 transition ${
-                            notification.read
-                              ? "bg-white dark:bg-gray-800"
-                              : "bg-blue-50 dark:bg-gray-700"
-                          }`}
-                        >
-                          <div className="flex justify-between">
-                            <h4 className="font-medium text-gray-800 dark:text-white">
-                              {notification.title}
-                            </h4>
-                            {!notification.read && (
-                              <span className="bg-red-500 rounded-full w-2 h-2"></span>
-                            )}
-                          </div>
-                          <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">
+                  {notifications.map((notification) => (
+                    <div
+                      key={notification._id}
+                      onClick={() => {
+                        markNotificationAsRead(notification._id);
+                        if (notification.link) router.push(notification.link);
+                      }}
+                      className={`p-3 border-b cursor-pointer ${
+                        notification.read ? "bg-gray-50" : "bg-blue-50"
+                      }`}
+                    >
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <h4 className="font-medium">{notification.title}</h4>
+                          <p className="text-sm text-gray-600 mt-1">
                             {notification.message}
                           </p>
-                          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                            {new Date(notification.createdAt).toLocaleString(
-                              "ar-EG"
-                            )}
-                          </p>
                         </div>
-                      </Link>
-                    ))
-                  ) : (
-                    <div className="p-8 text-center">
-                      <FaBell className="mx-auto text-gray-400 text-2xl" />
-                      <p className="text-gray-500 dark:text-gray-400 mt-2">
-                        لا توجد إشعارات
+                        {!notification.read && (
+                          <span className="bg-red-500 rounded-full w-2 h-2 mt-2"></span>
+                        )}
+                      </div>
+                      <p className="text-xs text-gray-500 mt-2">
+                        {new Date(notification.createdAt).toLocaleString(
+                          "ar-EG",
+                          {
+                            year: "numeric",
+                            month: "long",
+                            day: "numeric",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          }
+                        )}
                       </p>
                     </div>
-                  )}
+                  ))}
                 </div>
 
                 <div className="p-3 bg-gray-50 dark:bg-gray-700 rounded-b-xl">
@@ -334,7 +311,7 @@ const TopNavbar = () => {
 
                 <div className="p-2">
                   <Link
-                    href="/profile"
+                    href="/Profile"
                     className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition"
                   >
                     <FaUserCircle className="text-gray-500 dark:text-gray-400" />
@@ -342,23 +319,16 @@ const TopNavbar = () => {
                       الملف الشخصي
                     </span>
                   </Link>
-
-                  <Link
-                    href="/settings"
-                    className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition"
-                  >
-                    <FaCog className="text-gray-500 dark:text-gray-400" />
-                    <span className="text-gray-700 dark:text-gray-300">
-                      الإعدادات
-                    </span>
-                  </Link>
                 </div>
 
                 <div className="p-3 border-t border-gray-200 dark:border-gray-700">
-                  <button className="flex items-center gap-3 w-full p-3 rounded-lg bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30 transition">
+                  <Link
+                    href="Logout"
+                    className="flex items-center gap-3 w-full p-3 rounded-lg bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30 transition"
+                  >
                     <FaSignOutAlt />
                     <span>تسجيل الخروج</span>
-                  </button>
+                  </Link>
                 </div>
               </motion.div>
             )}

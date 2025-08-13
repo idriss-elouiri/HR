@@ -1,4 +1,4 @@
-import EmployeeAuth from "../EmployeeAuth";
+import EmployeeAuth from "@/components/EmployeeAuth";
 
 export default function EmployeesAuthPage() {
   return (

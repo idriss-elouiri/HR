@@ -15,6 +15,11 @@ import notificationsRouter from "./modules/notification/notification.route.js";
 import advanceRequestRouter from "./modules/advanceRequest/advanceRequest.route.js";
 import cookieParser from "cookie-parser";
 import dotenv from "dotenv";
+import path from "path"; // أضف هذا الاستيراد
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
 dotenv.config();
@@ -27,12 +32,17 @@ app.use(
   cors({
     origin: process.env.FRONTEND_URL,
     credentials: true,
-    methods: ["GET", "POST", "PUT", "DELETE"],
-    allowedHeaders: ["Content-Type", "Authorization"],
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: [
+      "Content-Type",
+      "Authorization",
+      "Content-Length",
+      "X-Requested-With",
+    ],
   })
 );
-
 app.use("/api/auth", authRouter);
+
 app.use("/api/employees", employeeRouter);
 app.use("/api/attendance", attendanceRouter);
 app.use("/api/salaries", salarieRouter);

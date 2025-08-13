@@ -1,18 +1,16 @@
 import Salary from "./salary.model.js";
 import Employee from "../employee/employee.models.js";
-import { errorHandler } from "../../utils/error.js";
 import pdf from "html-pdf";
+import AdvanceRequest from "../advanceRequest/advanceRequest.model.js";
 
 export const createSalary = async (req, res, next) => {
   try {
     const { employee: employeeId, month, year } = req.body;
 
-    // التحقق من صحة البيانات المدخلة
     if (!employeeId || !month || !year) {
       return next(errorHandler(400, "جميع الحقول مطلوبة"));
     }
 
-    // التحقق من وجود راتب لهذا الموظف لنفس الشهر والسنة
     const existingSalary = await Salary.findOne({
       employee: employeeId,
       month,
@@ -25,29 +23,29 @@ export const createSalary = async (req, res, next) => {
       );
     }
 
-    // جلب بيانات الموظف
     const employee = await Employee.findById(employeeId);
     if (!employee) {
       return next(errorHandler(404, "الموظف غير موجود"));
     }
 
-    // حساب الراتب الصافي
     const totalAllowances =
       req.body.allowances?.reduce((sum, a) => sum + (a.amount || 0), 0) || 0;
     const totalDeductions =
       req.body.deductions?.reduce((sum, d) => sum + (d.amount || 0), 0) || 0;
     const insuranceAmount = req.body.socialInsurance?.amount || 0;
+
+    // الحصول على خصومات السلف
     const advanceDeductions = await getAdvanceDeductions(
       employeeId,
       month,
       year
     );
 
-    // حساب الراتب الصافي مع إضافة خصومات السلف
     const totalAdvanceDeductions = advanceDeductions.reduce(
       (sum, a) => sum + (a.amount || 0),
       0
     );
+
     const netSalary =
       (employee.salary || 0) +
       totalAllowances -
@@ -62,6 +60,8 @@ export const createSalary = async (req, res, next) => {
       netSalary,
       createdBy: req.user.id,
       status: req.body.status || "مسودة",
+      // إضافة خصومات السلف إلى الخصومات
+      deductions: [...(req.body.deductions || []), ...advanceDeductions],
     };
 
     const salary = await Salary.create(salaryData);
@@ -74,11 +74,14 @@ export const createSalary = async (req, res, next) => {
     next(error);
   }
 };
+
+// دالة مساعدة للحصول على خصومات السلف
 async function getAdvanceDeductions(employeeId, month, year) {
   const advanceRequests = await AdvanceRequest.find({
     employee: employeeId,
     status: "موافق عليها",
     isPaid: false,
+    includedInSalary: false,
   });
 
   const deductions = [];
@@ -94,9 +97,13 @@ async function getAdvanceDeductions(employeeId, month, year) {
         date: new Date(),
         status: "مسددة",
         isPaid: true,
+        advanceRequestId: advance._id,
       });
+
+      // تحديث حالة السلفة
       advance.isPaid = true;
       advance.status = "مسددة";
+      advance.includedInSalary = true;
       await advance.save();
     } else if (advance.repaymentMethod === "تقسيط") {
       const deductionAmount = advance.deductionPerMonth;
@@ -107,19 +114,24 @@ async function getAdvanceDeductions(employeeId, month, year) {
         date: new Date(),
         status: "مسددة جزئياً",
         isPaid: false,
+        advanceRequestId: advance._id,
       });
+
+      // تحديث حالة السلفة
       advance.installments -= 1;
       advance.amount -= deductionAmount;
       if (advance.installments === 0) {
         advance.isPaid = true;
         advance.status = "مسددة";
       }
+      advance.includedInSalary = true;
       await advance.save();
     }
   }
 
   return deductions;
 }
+
 export const getSalaries = async (req, res, next) => {
   try {
     const { employeeId, month, year, status } = req.query;
@@ -143,7 +155,6 @@ export const getSalaries = async (req, res, next) => {
     next(error);
   }
 };
-
 export const generatePayslip = async (req, res, next) => {
   try {
     const salary = await Salary.findById(req.params.id)
@@ -262,7 +273,8 @@ export const generatePayslip = async (req, res, next) => {
                     </tr>
                 </table>
             </div>
-            
+            <div class="section">
+  
             ${
               salary.allowances?.length > 0
                 ? `
@@ -285,6 +297,7 @@ export const generatePayslip = async (req, res, next) => {
                       .join("")}
                 </table>
             </div>
+            
             `
                 : ""
             }

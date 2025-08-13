@@ -25,8 +25,11 @@ const notificationSchema = new mongoose.Schema(
       enum: ["leave", "task", "announcement", "salary", "advance"],
       required: true,
     },
+    actionTaken: {
+      type: Boolean,
+      default: false,
+    },
     metadata: Object,
-    // إضافة حقل جديد لتحديد أن الإشعار خاص بالموظف
     forEmployee: {
       type: Boolean,
       default: false,

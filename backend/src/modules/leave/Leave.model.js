@@ -25,7 +25,7 @@ const leaveSchema = new mongoose.Schema(
       }, // ليس مطلوبًا للإجازة الزمنية
     },
     startTime: {
-      type: String, // تخزين الوقت كسلسلة (مثال: "08:30")
+      type: String,
       required: function () {
         return this.type === "زمنية";
       }, // مطلوب للإجازة الزمنية

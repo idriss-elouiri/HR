@@ -50,6 +50,10 @@ const advanceRequestSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    includedInSalary: {
+      type: Boolean,
+      default: false,
+    },
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
@@ -63,7 +67,6 @@ const advanceRequestSchema = new mongoose.Schema(
   }
 );
 
-// Middleware لحساب القسط الشهري قبل الحفظ
 advanceRequestSchema.pre("save", function (next) {
   if (this.repaymentMethod === "تقسيط" && this.installments > 1) {
     this.deductionPerMonth = this.amount / this.installments;

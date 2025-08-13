@@ -1,9 +1,9 @@
-import EmployeeAuth from "../EmployeeAuth";
+import HrAuth from "@/components/HrAuth";
 
-export default function EmployeesHrAuthPage() {
+export default function HrAuthPage() {
   return (
     <>
-      <EmployeeAuth />
+      <HrAuth />
     </>
   );
 }

@@ -276,7 +276,7 @@ const Sidebar = () => {
           </Link>
         )}
         {/* معلومات الموظف - للموظف العادي فقط */}
-        {isEmployee && (
+        {(isEmployee || isHR) && (
           <Link
             href="/EmployeeInfo"
             onClick={() => handleLinkClick("info")}
@@ -295,28 +295,12 @@ const Sidebar = () => {
           </Link>
         )}
 
-        {/* الإعدادات - متاحة للجميع ولكن بصلاحيات مختلفة */}
-        <Link
-          href="/Settings"
-          onClick={() => handleLinkClick("settings")}
-          className={`flex items-center gap-3 py-3 px-4 rounded-xl transition-all group ${
-            activeLink === "settings"
-              ? "bg-gradient-to-r from-gray-600 to-gray-700 shadow-lg"
-              : "hover:bg-indigo-700"
-          }`}
-        >
-          <div className="p-2 rounded-lg bg-white/10 group-hover:bg-white/20 transition">
-            <MdSettings size={20} />
-          </div>
-          <span className={`${collapsed ? "hidden" : "block"}`}>الإعدادات</span>
-        </Link>
-
         {/* تسجيل الخروج - متاح للجميع */}
         <Link
-          href="/logout"
-          onClick={() => handleLinkClick("logout")}
+          href="/Logout"
+          onClick={() => handleLinkClick("Logout")}
           className={`flex items-center gap-3 py-3 px-4 rounded-xl transition-all group ${
-            activeLink === "logout"
+            activeLink === "Logout"
               ? "bg-gradient-to-r from-red-500 to-red-600 shadow-lg"
               : "hover:bg-indigo-700"
           }`}

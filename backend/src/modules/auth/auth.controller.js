@@ -35,7 +35,7 @@ export const register = async (req, res, next) => {
       .status(201)
       .cookie("access_token", token, {
         httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
+        secure: true,
         sameSite: "None", // حتى يُسمح له بالعمل بين دومينات مختلفة
         maxAge: 7 * 24 * 60 * 60 * 1000, // 7 أيام
       })
@@ -71,9 +71,9 @@ export const login = async (req, res, next) => {
       .status(200)
       .cookie("access_token", token, {
         httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
+        secure: true,
         sameSite: "None",
-        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 أيام
+        maxAge: 7 * 24 * 60 * 60 * 1000,
       })
       .json(userWithoutPassword);
   } catch (error) {
@@ -83,4 +83,51 @@ export const login = async (req, res, next) => {
 
 export const logout = (req, res) => {
   res.clearCookie("access_token").status(200).json("تم تسجيل الخروج بنجاح");
+};
+export const updateUser = async (req, res, next) => {
+  if (req.user.id !== req.params.userId && !req.user.isAdmin) {
+    return next(errorHandler(403, "غير مصرح لك بتحديث هذا المستخدم"));
+  }
+
+  try {
+    const updatedUser = await User.findByIdAndUpdate(
+      req.params.userId,
+      { $set: req.body },
+      { new: true }
+    ).select("-password");
+
+    // إرجاع المسار الكامل للصورة
+    const userWithFullPath = {
+      ...updatedUser._doc,
+      profilePicture: updatedUser.profilePicture
+        ? updatedUser.profilePicture // لا تُضف BASE_URL هنا
+        : null,
+    };
+
+    res.status(200).json(userWithFullPath);
+  } catch (error) {
+    next(error);
+  }
+};
+
+// الحصول على بيانات مستخدم
+export const getUser = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.params.userId).select("-password");
+    if (!user) return next(errorHandler(404, "المستخدم غير موجود"));
+
+    // أضف BASE_URL فقط عند الاستجابة
+    const fullProfilePicture = user.profilePicture
+      ? `${process.env.BASE_URL || "http://localhost:3005"}${
+          user.profilePicture
+        }`
+      : null;
+
+    res.status(200).json({
+      ...user._doc,
+      profilePicture: fullProfilePicture,
+    });
+  } catch (error) {
+    next(error);
+  }
 };

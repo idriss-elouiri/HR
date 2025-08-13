@@ -1,6 +1,12 @@
 "use client";
 import { useState, useEffect } from "react";
-import { FaBell, FaCheck, FaTrash } from "react-icons/fa";
+import {
+  FaBell,
+  FaCheck,
+  FaTimes,
+  FaTrash,
+  FaMoneyBillWave,
+} from "react-icons/fa";
 import Loader from "@/components/Loader";
 import { toast } from "react-toastify";
 
@@ -13,14 +19,21 @@ const Notifications = () => {
   const fetchNotifications = async () => {
     try {
       setLoading(true);
+      let url = `${apiUrl}/api/notifications`;
+      let params = {};
 
-      // تحديد نقطة النهاية بناءً على التبويب النشط
-      let endpoint = `${apiUrl}/api/notifications`;
       if (activeTab === "employee") {
-        endpoint = `${apiUrl}/api/notifications/employee`;
+        params.forEmployee = true;
       }
 
-      const response = await fetch(endpoint, {
+      if (activeTab === "unread") {
+        params.unread = true;
+      }
+
+      const queryString = new URLSearchParams(params).toString();
+      if (queryString) url += `?${queryString}`;
+
+      const response = await fetch(url, {
         credentials: "include",
       });
 
@@ -50,6 +63,62 @@ const Notifications = () => {
       );
     } catch (error) {
       toast.error("فشل في تحديث الإشعار");
+    }
+  };
+
+  const handleNotificationAction = async (notification, action) => {
+    try {
+      if (notification.type === "leave") {
+        // معالجة الإجازات
+        if (action === "approve") {
+          await fetch(
+            `${apiUrl}/api/leaves/updateLeaveSt/${notification.metadata.leaveId}`,
+            {
+              method: "PUT",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ status: "موافق عليها" }),
+              credentials: "include",
+            }
+          );
+        } else if (action === "reject") {
+          await fetch(`${apiUrl}/api/leaves/${notification.metadata.leaveId}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ status: "مرفوضة" }),
+            credentials: "include",
+          });
+        }
+      }
+      // معالجة السلف
+      else if (notification.type === "advance") {
+        if (action === "approve") {
+          await fetch(
+            `${apiUrl}/api/advance-requests/${notification.metadata.advanceRequestId}`,
+            {
+              method: "PUT",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ status: "موافق عليها" }),
+              credentials: "include",
+            }
+          );
+        } else if (action === "reject") {
+          await fetch(
+            `${apiUrl}/api/advance-requests/${notification.metadata.advanceRequestId}`,
+            {
+              method: "PUT",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ status: "مرفوضة" }),
+              credentials: "include",
+            }
+          );
+        }
+      }
+
+      await markAsRead(notification._id);
+      setTimeout(fetchNotifications, 1000);
+      toast.success(`تم ${action === "approve" ? "الموافقة" : "الرفض"} بنجاح`);
+    } catch (error) {
+      toast.error("حدث خطأ أثناء معالجة الطلب");
     }
   };
 
@@ -165,6 +234,32 @@ const Notifications = () => {
                 </div>
 
                 <div className="flex space-x-2 ml-4">
+                  {/* أيقونات الموافقة للسلف والإجازات */}
+                  {(notification.type === "leave" ||
+                    notification.type === "advance") &&
+                    !notification.actionTaken && (
+                      <>
+                        <button
+                          onClick={() =>
+                            handleNotificationAction(notification, "approve")
+                          }
+                          className="p-2 bg-green-100 text-green-600 rounded-full hover:bg-green-200 transition"
+                          title="موافقة"
+                        >
+                          <FaCheck size={14} />
+                        </button>
+                        <button
+                          onClick={() =>
+                            handleNotificationAction(notification, "reject")
+                          }
+                          className="p-2 bg-red-100 text-red-600 rounded-full hover:bg-red-200 transition"
+                          title="رفض"
+                        >
+                          <FaTimes size={14} />
+                        </button>
+                      </>
+                    )}
+
                   {!notification.read && (
                     <button
                       onClick={() => markAsRead(notification._id)}
@@ -174,6 +269,7 @@ const Notifications = () => {
                       <FaCheck size={14} />
                     </button>
                   )}
+
                   <button
                     onClick={() => deleteNotification(notification._id)}
                     className="p-2 bg-red-100 text-red-600 rounded-full hover:bg-red-200 transition"

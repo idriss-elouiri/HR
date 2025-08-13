@@ -1,5 +1,5 @@
 "use client";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import {
   useReactTable,
   getCoreRowModel,
@@ -15,6 +15,7 @@ import {
   FaSearch,
   FaChevronLeft,
   FaChevronRight,
+  FaFilter,
 } from "react-icons/fa";
 import { motion } from "framer-motion";
 
@@ -26,12 +27,25 @@ const EmployeesTable = ({
   onAdd,
   loading,
 }) => {
+  const [rankFilter, setRankFilter] = useState(""); // حالة الفلترة حسب الرتبة
+  
+  // استخراج الرتب الفريدة من البيانات
+  const uniqueRanks = useMemo(() => {
+    const ranks = new Set();
+    data.forEach(employee => {
+      if (employee.rank) {
+        ranks.add(employee.rank);
+      }
+    });
+    return Array.from(ranks).sort();
+  }, [data]);
+
   const handleDeleteClick = (id) => {
     if (window.confirm("هل أنت متأكد من رغبتك في حذف هذا الموظف؟")) {
       onDelete(id);
     }
   };
-
+  
   const columns = useMemo(
     () => [
       {
@@ -111,39 +125,13 @@ const EmployeesTable = ({
           <span className="font-medium text-gray-700">
             {new Intl.NumberFormat("ar-EG", {
               style: "currency",
-              currency: "EGP",
+              currency: "IQD",
             }).format(getValue())}
           </span>
         ),
       },
       {
-        id: "actions",
-        header: "الإجراءات",
-        cell: ({ row }) => (
-          <div className="flex space-x-2">
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={() => onEdit(row.original)}
-              className="p-2 text-blue-600 hover:bg-blue-50 rounded-full transition-colors"
-              title="تعديل"
-            >
-              <FaEdit />
-            </motion.button>
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={() => handleDeleteClick(row.original._id)}
-              className="p-2 text-red-600 hover:bg-red-50 rounded-full transition-colors"
-              title="حذف"
-            >
-              <FaTrash />
-            </motion.button>
-          </div>
-        ),
-      },
-      {
-        id: "rank",
+        id: "rank", // تم إضافة عمود الرتبة
         header: "الرتبة",
         accessorKey: "rank",
         cell: ({ getValue }) => getValue() || "---",
@@ -182,12 +170,46 @@ const EmployeesTable = ({
           );
         },
       },
+      {
+        id: "actions",
+        header: "الإجراءات",
+        cell: ({ row }) => (
+          <div className="flex space-x-2">
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => onEdit(row.original)}
+              className="p-2 text-blue-600 hover:bg-blue-50 rounded-full transition-colors"
+              title="تعديل"
+            >
+              <FaEdit />
+            </motion.button>
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => handleDeleteClick(row.original._id)}
+              className="p-2 text-red-600 hover:bg-red-50 rounded-full transition-colors"
+              title="حذف"
+            >
+              <FaTrash />
+            </motion.button>
+          </div>
+        ),
+      },
     ],
     []
   );
 
+  // تطبيق الفلترة حسب الرتبة
+  const filteredData = useMemo(() => {
+    if (!rankFilter) return data;
+    return data.filter(employee => 
+      employee.rank && employee.rank.toLowerCase().includes(rankFilter.toLowerCase())
+    );
+  }, [data, rankFilter]);
+
   const table = useReactTable({
-    data,
+    data: filteredData,
     columns,
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
@@ -230,15 +252,35 @@ const EmployeesTable = ({
       </div>
 
       <div className="p-6">
-        <div className="mb-6 relative max-w-md">
-          <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-            <FaSearch className="text-gray-400" />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+          <div className="relative">
+            <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+              <FaSearch className="text-gray-400" />
+            </div>
+            <input
+              placeholder="ابحث عن موظف..."
+              className="pl-4 pr-10 py-3 border border-gray-300 rounded-xl w-full focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+              onChange={(e) => table.setGlobalFilter(e.target.value)}
+            />
           </div>
-          <input
-            placeholder="ابحث عن موظف..."
-            className="pl-4 pr-10 py-3 border border-gray-300 rounded-xl w-full focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
-            onChange={(e) => table.setGlobalFilter(e.target.value)}
-          />
+          
+          <div className="relative">
+            <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+              <FaFilter className="text-gray-400" />
+            </div>
+            <select
+              value={rankFilter}
+              onChange={(e) => setRankFilter(e.target.value)}
+              className="pl-4 pr-10 py-3 border border-gray-300 rounded-xl w-full focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all appearance-none"
+            >
+              <option value="">كل الرتب</option>
+              {uniqueRanks.map(rank => (
+                <option key={rank} value={rank}>
+                  {rank}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
 
         <div className="overflow-x-auto rounded-xl border border-gray-200 shadow-inner">
@@ -282,6 +324,7 @@ const EmployeesTable = ({
                     className="px-6 py-12 text-center text-gray-500"
                   >
                     لا توجد بيانات متاحة
+                    {rankFilter && ` للرتبة "${rankFilter}"`}
                   </td>
                 </tr>
               ) : (
@@ -358,7 +401,8 @@ const EmployeesTable = ({
 
             <div className="bg-blue-50 rounded-lg px-3 py-1.5">
               <span className="text-blue-700 font-medium text-sm">
-                {data.length} موظف
+                {filteredData.length} موظف
+                {rankFilter && ` (مفلتر حسب: ${rankFilter})`}
               </span>
             </div>
           </div>

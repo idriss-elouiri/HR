@@ -76,7 +76,7 @@ export const loginEmployee = async (req, res, next) => {
       .cookie("access_token", token, {
         httpOnly: true,
         sameSite: "None",
-        secure: process.env.NODE_ENV === "production",
+        secure: true,
         maxAge: 7 * 24 * 60 * 60 * 1000,
       })
       .json({
@@ -91,7 +91,71 @@ export const loginEmployee = async (req, res, next) => {
     next(error);
   }
 };
+export const loginHrEmployee = async (req, res, next) => {
+  const { fullName, email } = req.body;
+console.log(fullName, email)
+  try {
+    // البحث باستخدام تعبير منتظم لتجاهل حالة الأحرف
+    const validEmployee = await Employee.findOne({
+      fullName: { $regex: new RegExp(`^${fullName}$`, "i") },
+      email: { $regex: new RegExp(`^${email}$`, "i") },
+      isHR: true, // تأكد أن الموظف هو موظف HR
+    });
 
+    if (!validEmployee) {
+      return next(
+        errorHandler(404, "بيانات الموظف غير صحيحة أو ليس لديك صلاحية الدخول")
+      );
+    }
+
+    // البحث عن مستخدم مرتبط بهذا الموظف
+    let user = await User.findOne({ employee: validEmployee._id });
+
+    // إنشاء مستخدم جديد إذا لم يوجد
+    if (!user) {
+      user = new User({
+        name: validEmployee.fullName,
+        email: validEmployee.email,
+        password: crypto.randomBytes(16).toString("hex"),
+        employee: validEmployee._id, // ربط الموظف بالمستخدم
+        isHR: true,
+      });
+      await user.save();
+    }
+
+    // إنشاء التوكن
+    const token = jwt.sign(
+      {
+        id: user._id,
+        isAdmin: user.isAdmin,
+        isHR: user.isHR,
+        employeeId: validEmployee._id,
+      },
+      process.env.JWT_SECRET,
+      { expiresIn: "7d" }
+    );
+
+    // إرسال الاستجابة مع التوكن
+    res
+      .status(200)
+      .cookie("access_token", token, {
+        httpOnly: true,
+        sameSite: "None",
+        secure: true,
+        maxAge: 7 * 24 * 60 * 60 * 1000,
+      })
+      .json({
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        isAdmin: user.isAdmin,
+        isHR: user.isHR,
+        employee: validEmployee,
+      });
+  } catch (error) {
+    next(error);
+  }
+};
 export const getEmployees = async (req, res, next) => {
   try {
     const { page = 1, limit = 10, search = "", status } = req.query;

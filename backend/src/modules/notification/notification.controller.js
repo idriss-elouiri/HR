@@ -1,5 +1,6 @@
 import Notification from "./notification.model.js";
 import { errorHandler } from "../../utils/error.js";
+import User from "../auth/auth.models.js";
 
 export const getNotifications = async (req, res, next) => {
   try {
@@ -16,19 +17,49 @@ export const getNotifications = async (req, res, next) => {
   }
 };
 
-// دالة جديدة لجلب إشعارات الموظف
 export const getEmployeeNotifications = async (req, res, next) => {
   try {
-    const notifications = await Notification.find({
+    const { unread } = req.query;
+    const query = {
       user: req.user.id,
       forEmployee: true,
-    })
+    };
+
+    // إضافة فلتر الإشعارات غير المقروءة
+    if (unread === "true") {
+      query.read = false;
+    }
+
+    const notifications = await Notification.find(query)
       .sort({ createdAt: -1 })
       .limit(20);
 
     res.status(200).json({
       success: true,
       data: notifications,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getUnreadEmployeeNotifications = async (req, res, next) => {
+  try {
+    // البحث عن المستخدم المرتبط بالموظف
+    const user = await User.findById(req.user.id);
+    if (!user || !user.employee) {
+      return next(errorHandler(404, "لم يتم العثور على بيانات الموظف"));
+    }
+
+    const count = await Notification.countDocuments({
+      user: req.user.id,
+      forEmployee: true,
+      read: false,
+    });
+
+    res.status(200).json({
+      success: true,
+      count,
     });
   } catch (error) {
     next(error);
@@ -83,6 +114,30 @@ export const deleteNotification = async (req, res, next) => {
     res.status(200).json({
       success: true,
       message: "تم حذف الإشعار",
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getUnreadNotifications = async (req, res, next) => {
+  try {
+    const query = {
+      user: req.user.id,
+      read: false,
+    };
+
+    if (req.query.forEmployee) {
+      query.forEmployee = true;
+    }
+
+    const notifications = await Notification.find(query)
+      .sort({ createdAt: -1 })
+      .limit(20);
+
+    res.status(200).json({
+      success: true,
+      data: notifications,
     });
   } catch (error) {
     next(error);

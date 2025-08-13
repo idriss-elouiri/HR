@@ -5,109 +5,97 @@ import Leave from '../leave/Leave.model.js';
 import { errorHandler } from '../../utils/error.js';
 import ZKLib from 'node-zklib';
 
-// دالة مساعدة للبحث عن الموظف باستخدام معرف البصمة
-const findEmployeeByFingerprint = async (fingerprintId) => {
-    if (!fingerprintId) return null;
+const calculateAttendanceMetrics = (checkIn, checkOut, shift) => {
+    if (!shift) return { workingHours: 0, delay: 0, status: 'غياب' };
 
-    try {
-        return await Employee.findOne({
-            $or: [
-                { fingerprintId: fingerprintId },
-                { employeeId: fingerprintId }
-            ]
-        });
-    } catch (error) {
-        console.error('Error finding employee:', error);
-        return null;
+    const shiftStart = new Date(checkIn);
+    shiftStart.setHours(...shift.startTime.split(':').map(Number), 0, 0);
+
+    const shiftEnd = new Date(checkIn);
+    shiftEnd.setHours(...shift.endTime.split(':').map(Number), 0, 0);
+
+    const delay = Math.max(0, (checkIn - shiftStart) / (1000 * 60));
+
+    let workingHours = 0;
+    let status = 'حاضر';
+
+    if (checkOut) {
+        workingHours = (checkOut - checkIn) / (1000 * 60 * 60);
     }
+
+    if (delay > 15) status = 'متأخر';
+    if (workingHours < 4) status = 'غياب جزئي';
+    if (!checkIn) status = 'غياب';
+
+    return { workingHours, delay, status };
 };
 
 export const syncWithDevice = async (req, res, next) => {
     try {
         const { deviceIp, devicePort = 4370 } = req.body;
-
-        // إنشاء كائن الجهاز
         const zkInstance = new ZKLib(deviceIp, devicePort, 10000, 4000);
 
         try {
-            // إنشاء الاتصال
             await zkInstance.createSocket();
-            console.log('تم الاتصال بنجاح بجهاز البصمة');
-
-            // جلب سجلات الحضور
             const logs = await zkInstance.getAttendances();
-            console.log(`تم جلب ${logs.length} سجل حضور`);
 
-            // معالجة البيانات
-            const attendanceRecords = await Promise.all(logs.map(async log => {
-                const employee = await findEmployeeByFingerprint(log.userId);
+            const records = [];
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
 
-                if (!employee) {
-                    console.warn(`الموظف غير موجود للرقم: ${log.userId}`);
-                    return null;
-                }
+            for (const log of logs) {
+                const logDate = new Date(log.timestamp);
+                if (logDate < today) continue;
 
-                return {
+                const employee = await Employee.findOne({
+                    $or: [
+                        { fingerprintId: log.userId },
+                        { employeeId: log.userId }
+                    ]
+                }).populate('shift');
+
+                if (!employee) continue;
+
+                const existing = await Attendance.findOne({
                     employee: employee._id,
-                    date: new Date(log.timestamp),
-                    checkIn: new Date(log.timestamp),
-                    deviceId: log.deviceId,
-                    shift: employee.shift,
-                    notes: `مزامنة تلقائية من الجهاز ${deviceIp}`
-                };
-            }));
+                    date: { $gte: today, $lt: new Date(today.getTime() + 24 * 60 * 60 * 1000) }
+                });
 
-            // حفظ السجلات
-            const validRecords = attendanceRecords.filter(record => record !== null);
-            const savedRecords = await Attendance.insertMany(validRecords);
-            console.log(`تم حفظ ${savedRecords.length} سجل حضور`);
+                if (existing) {
+                    if (!existing.checkIn || logDate < existing.checkIn) {
+                        existing.checkIn = logDate;
+                    }
+                    if (!existing.checkOut || logDate > existing.checkOut) {
+                        existing.checkOut = logDate;
+                    }
+                    await existing.save();
+                } else {
+                    records.push({
+                        employee: employee._id,
+                        date: logDate,
+                        checkIn: logDate,
+                        shift: employee.shift,
+                        notes: `مزامنة تلقائية من ${deviceIp}`
+                    });
+                }
+            }
+
+            if (records.length > 0) {
+                await Attendance.insertMany(records);
+            }
 
             res.status(200).json({
                 success: true,
-                message: `تم مزامنة ${savedRecords.length} سجل حضور`,
-                data: savedRecords
+                message: `تم مزامنة ${logs.length} سجل`
             });
-        } catch (error) {
-            console.error('خطأ في عملية المزامنة:', error);
-            throw error;
         } finally {
-            // قطع الاتصال في النهاية
             await zkInstance.disconnect();
-            console.log('تم قطع الاتصال بجهاز البصمة');
         }
     } catch (error) {
-        console.error('خطأ في المزامنة:', error);
         next(errorHandler(500, `خطأ في المزامنة: ${error.message}`));
     }
 };
 
-
-// حساب ساعات العمل والتأخير
-const calculateAttendanceMetrics = (checkIn, shift) => {
-    if (!shift) return { workingHours: 0, delay: 0, status: 'غياب' };
-
-    const shiftStart = new Date(checkIn);
-    shiftStart.setHours(...shift.startTime.split(':').map(Number));
-
-    const shiftEnd = new Date(checkIn);
-    shiftEnd.setHours(...shift.endTime.split(':').map(Number));
-
-    const delay = Math.max(0, (checkIn - shiftStart) / (1000 * 60)); // التأخير بالدقائق
-
-    let workingHours = 0;
-    let status = 'حاضر';
-
-    if (checkIn <= shiftEnd) {
-        workingHours = (shiftEnd - checkIn) / (1000 * 60 * 60);
-    }
-
-    if (delay > 15) status = 'متأخر';
-    if (workingHours < 4) status = 'غياب جزئي';
-
-    return { workingHours, delay, status };
-};
-
-// جلب سجلات الحضور اليومية
 export const getDailyAttendance = async (req, res, next) => {
     try {
         const { date = new Date() } = req.query;
@@ -117,28 +105,82 @@ export const getDailyAttendance = async (req, res, next) => {
         const endDate = new Date(date);
         endDate.setHours(23, 59, 59, 999);
 
+        const employees = await Employee.find().populate('shift');
         const attendance = await Attendance.find({
-            date: { $gte: startDate, $lte: endDate }
-        })
-            .populate('employee', 'fullName employeeId department')
+            date: { $gte: startDate, $lt: endDate }
+        }).populate('employee', 'fullName employeeId department')
             .populate('shift', 'name startTime endTime');
 
-        // حساب المقاييس
-        const processedAttendance = attendance.map(record => {
-            const metrics = calculateAttendanceMetrics(
-                record.checkIn,
-                record.shift
+        const absences = await Absence.find({
+            date: { $gte: startDate, $lt: endDate },
+            status: 'موافق عليها'
+        });
+
+        const leaves = await Leave.find({
+            startDate: { $lte: endDate },
+            endDate: { $gte: startDate },
+            status: 'موافق عليها'
+        });
+
+        const result = employees.map(employee => {
+            const attendanceRecord = attendance.find(a =>
+                a.employee._id.toString() === employee._id.toString()
             );
 
+            const absenceRecord = absences.find(a =>
+                a.employee.toString() === employee._id.toString()
+            );
+
+            const leaveRecord = leaves.find(l =>
+                l.employee.toString() === employee._id.toString()
+            );
+
+            if (leaveRecord) {
+                return {
+                    employee,
+                    date: startDate,
+                    status: 'إجازة',
+                    type: leaveRecord.type,
+                    workingHours: 0,
+                    delay: 0
+                };
+            }
+
+            if (absenceRecord) {
+                return {
+                    employee,
+                    date: startDate,
+                    status: 'غياب',
+                    type: absenceRecord.type,
+                    workingHours: 0,
+                    delay: 0
+                };
+            }
+
+            if (attendanceRecord) {
+                const metrics = calculateAttendanceMetrics(
+                    attendanceRecord.checkIn,
+                    attendanceRecord.checkOut,
+                    employee.shift
+                );
+                return {
+                    ...attendanceRecord.toObject(),
+                    ...metrics
+                };
+            }
+
             return {
-                ...record.toObject(),
-                ...metrics
+                employee,
+                date: startDate,
+                status: 'غياب',
+                workingHours: 0,
+                delay: 0
             };
         });
 
         res.status(200).json({
             success: true,
-            data: processedAttendance
+            data: result
         });
     } catch (error) {
         next(error);

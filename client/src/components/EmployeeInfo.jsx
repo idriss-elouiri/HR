@@ -2,14 +2,16 @@
 
 import React, { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
-import { FaEdit, FaSave, FaTimes } from "react-icons/fa";
+import { FaEdit, FaSave, FaTimes, FaBell } from "react-icons/fa";
 import Loader from "@/components/Loader";
 import { toast } from "react-toastify";
+import Link from "next/link";
 
 const EmployeeInfo = () => {
   const { currentUser } = useSelector((state) => state.user);
   const [employee, setEmployee] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
   const [editing, setEditing] = useState(false);
   const [formData, setFormData] = useState({});
   const [updating, setUpdating] = useState(false);
@@ -22,6 +24,11 @@ const EmployeeInfo = () => {
   const [leaveSummary, setLeaveSummary] = useState({});
 
   useEffect(() => {
+    if (currentUser.isHR) {
+      router.push("/dashboard");
+      return;
+    }
+
     const fetchEmployeeData = async () => {
       try {
         setLoading(true);
@@ -46,6 +53,7 @@ const EmployeeInfo = () => {
         setLoading(false);
       }
     };
+
     const fetchCompensationData = async () => {
       try {
         // جلب بيانات البدلات والخصومات
@@ -120,7 +128,25 @@ const EmployeeInfo = () => {
       setUpdating(false);
     }
   };
+  const fetchUnreadNotifications = async () => {
+    try {
+      const res = await fetch(`${apiUrl}/api/notifications/employee/unread`, {
+        credentials: "include",
+      });
+      const data = await res.json();
+      if (data.success) {
+        setUnreadCount(data.count);
+      }
+    } catch (error) {
+      console.error("Error fetching unread notifications:", error);
+    }
+  };
 
+  useEffect(() => {
+    fetchUnreadNotifications();
+    const interval = setInterval(fetchUnreadNotifications, 30000);
+    return () => clearInterval(interval);
+  }, []);
   if (loading) {
     return (
       <div className="flex justify-center items-center h-screen">
@@ -201,7 +227,7 @@ const EmployeeInfo = () => {
           </div>
         )}
       </div>
-
+      <div></div>
       <div className="bg-white shadow-xl rounded-2xl overflow-hidden">
         {/* معلومات أساسية */}
         <div className="bg-gradient-to-r from-indigo-600 to-indigo-800 text-white p-6">
@@ -503,6 +529,18 @@ const EmployeeInfo = () => {
             </div>
           </div>
         </div>
+      </div>
+      <div className="fixed bottom-6 right-6 z-50">
+        <Link href="/Notifications">
+          <div className="relative bg-white p-3 rounded-full shadow-lg cursor-pointer hover:bg-gray-100 transition">
+            <FaBell className="text-xl text-indigo-600" />
+            {unreadCount > 0 && (
+              <span className="absolute top-0 right-0 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs">
+                {unreadCount}
+              </span>
+            )}
+          </div>
+        </Link>
       </div>
     </div>
   );

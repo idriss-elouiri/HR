@@ -75,7 +75,7 @@ export const createLeave = async (req, res, next) => {
         user: user._id,
         title: "طلب إجازة جديد",
         message: `الموظف ${employee.fullName} طلب إجازة ${req.body.type} لمدة ${durationText}`,
-        link: `/leaves/${leave._id}`,
+        link: `/LeavesAbsences`,
         type: "leave",
         metadata: {
           leaveId: leave._id,
@@ -158,23 +158,47 @@ export const updateLeave = async (req, res, next) => {
     next(error);
   }
 };
+
 export const updateLeaveStatus = async (req, res, next) => {
   try {
-    const { status, notes } = req.body;
-
     const updatedLeave = await Leave.findByIdAndUpdate(
       req.params.id,
-      {
-        status,
-        notes,
-        approvedBy: req.user.id,
-        approvedAt: Date.now(),
-      },
-      { new: true }
+      req.body,
+      { new: true, runValidators: true }
     );
 
     if (!updatedLeave) {
       return next(errorHandler(404, "طلب الإجازة غير موجود"));
+    }
+
+    // إرسال إشعار للموظف إذا تغيرت الحالة
+    if (["موافق عليها", "مرفوضة"].includes(updatedLeave.status)) {
+      // ابحث عن الموظف المرتبط بالإجازة
+      const employee = await Employee.findById(updatedLeave.employee);
+
+      if (employee) {
+        // ابحث عن المستخدم المرتبط بالموظف
+        const user = await User.findOne({ employee: employee._id });
+
+        if (user) {
+          await Notification.create({
+            user: user._id,
+            title: `طلب إجازة ${updatedLeave.status}`,
+            message: `تم ${updatedLeave.status} طلب إجازتك من ${new Date(
+              updatedLeave.startDate
+            ).toLocaleDateString("ar-EG")} إلى ${new Date(
+              updatedLeave.endDate
+            ).toLocaleDateString("ar-EG")}`,
+            link: `/LeavesAbsences`,
+            type: "leave",
+            forEmployee: true,
+            metadata: {
+              leaveId: updatedLeave._id,
+              status: updatedLeave.status,
+            },
+          });
+        }
+      }
     }
 
     res.status(200).json({
