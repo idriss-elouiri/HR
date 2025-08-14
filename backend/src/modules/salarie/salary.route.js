@@ -18,6 +18,6 @@ router.get("/:id", getSalary);
 router.put("/:id", verifyToken, updateSalary);
 router.delete("/:id", verifyToken, deleteSalary);
 router.get("/:id/payslip", generatePayslip);
-router.get("/employee-last/:employeeId", verifyToken, getEmployeeLastSalary);
+router.get("/employee-last/:employeeId", getEmployeeLastSalary);
 
 export default router;

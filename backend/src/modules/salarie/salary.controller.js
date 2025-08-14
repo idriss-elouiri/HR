@@ -2,6 +2,7 @@ import Salary from "./salary.model.js";
 import Employee from "../employee/employee.models.js";
 import pdf from "html-pdf";
 import AdvanceRequest from "../advanceRequest/advanceRequest.model.js";
+import { errorHandler } from "../../utils/error.js";
 
 export const createSalary = async (req, res, next) => {
   try {
@@ -74,6 +75,7 @@ export const createSalary = async (req, res, next) => {
     next(error);
   }
 };
+
 
 // دالة مساعدة للحصول على خصومات السلف
 async function getAdvanceDeductions(employeeId, month, year) {

@@ -13,6 +13,8 @@ const EmployeeInfo = () => {
   const [loading, setLoading] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const [editing, setEditing] = useState(false);
+  const [advanceRequests, setAdvanceRequests] = useState([]);
+  const [leaves, setLeaves] = useState([]);
   const [formData, setFormData] = useState({});
   const [updating, setUpdating] = useState(false);
   const apiUrl = process.env.NEXT_PUBLIC_API_URL;
@@ -22,7 +24,7 @@ const EmployeeInfo = () => {
   const [deductions, setDeductions] = useState([]);
   const [socialInsurance, setSocialInsurance] = useState(null);
   const [leaveSummary, setLeaveSummary] = useState({});
-
+  console.log(currentUser);
   useEffect(() => {
     if (currentUser.isHR) {
       router.push("/dashboard");
@@ -58,7 +60,7 @@ const EmployeeInfo = () => {
       try {
         // جلب بيانات البدلات والخصومات
         const salaryRes = await fetch(
-          `${apiUrl}/api/ ?employeeId=${currentUser.employee._id}&sort=-year,-month&limit=1`
+          `${apiUrl}/api/salaries/employee-last/${currentUser.employee._id}`
         );
         const salaryData = await salaryRes.json();
 
@@ -84,6 +86,32 @@ const EmployeeInfo = () => {
       }
     };
 
+    const fetchAdvanceRequests = async () => {
+      try {
+        const res = await fetch(
+          `${apiUrl}/api/advance-requests?employeeId=${currentUser.employee._id}`
+        );
+        const data = await res.json();
+        if (res.ok) setAdvanceRequests(data.data || []);
+      } catch (error) {
+        console.error("فشل في جلب طلبات السلف:", error);
+      }
+    };
+
+    const fetchLeaves = async () => {
+      try {
+        const res = await fetch(
+          `${apiUrl}/api/leaves?employeeId=${currentUser.employee.id}`
+        );
+        const data = await res.json();
+        if (res.ok) setLeaves(data.data || []);
+      } catch (error) {
+        console.error("فشل في جلب الإجازات:", error);
+      }
+    };
+
+    fetchAdvanceRequests();
+    fetchLeaves();
     fetchEmployeeData();
     if (currentUser.employee?._id) {
       fetchCompensationData();
@@ -128,25 +156,7 @@ const EmployeeInfo = () => {
       setUpdating(false);
     }
   };
-  const fetchUnreadNotifications = async () => {
-    try {
-      const res = await fetch(`${apiUrl}/api/notifications/employee/unread`, {
-        credentials: "include",
-      });
-      const data = await res.json();
-      if (data.success) {
-        setUnreadCount(data.count);
-      }
-    } catch (error) {
-      console.error("Error fetching unread notifications:", error);
-    }
-  };
 
-  useEffect(() => {
-    fetchUnreadNotifications();
-    const interval = setInterval(fetchUnreadNotifications, 30000);
-    return () => clearInterval(interval);
-  }, []);
   if (loading) {
     return (
       <div className="flex justify-center items-center h-screen">
@@ -446,6 +456,78 @@ const EmployeeInfo = () => {
               </div>
             </div>
           </div>
+          {/* طلبات السلف */}
+          <div className="mt-8">
+            <SectionTitle>طلبات السلف</SectionTitle>
+            <div className="bg-white rounded-xl shadow-md p-6">
+              {advanceRequests.length > 0 ? (
+                <table className="w-full">
+                  <thead>
+                    <tr className="text-right">
+                      <th className="pb-2">المبلغ</th>
+                      <th className="pb-2">الحالة</th>
+                      <th className="pb-2">تاريخ الطلب</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {advanceRequests.map((request) => (
+                      <tr key={request._id} className="text-right border-t">
+                        <td className="py-2">
+                          {request.amount?.toLocaleString() || 0} د.ع
+                        </td>
+                        <td className="py-2">{request.status}</td>
+                        <td className="py-2">
+                          {formatDate(request.createdAt)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              ) : (
+                <p className="text-gray-500">لا توجد طلبات سلف</p>
+              )}
+            </div>
+          </div>
+
+          {/* طلبات الإجازة */}
+          <div className="mt-8">
+            <SectionTitle>طلبات الإجازة</SectionTitle>
+            <div className="bg-white rounded-xl shadow-md p-6">
+              {leaves.length > 0 ? (
+                <table className="w-full">
+                  <thead>
+                    <tr className="text-right">
+                      <th className="pb-2">النوع</th>
+                      <th className="pb-2">المدة</th>
+                      <th className="pb-2">الحالة</th>
+                      <th className="pb-2">التواريخ</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {leaves.map((leave) => (
+                      <tr key={leave._id} className="text-right border-t">
+                        <td className="py-2">{leave.type}</td>
+                        <td className="py-2">
+                          {leave.duration}{" "}
+                          {leave.type === "زمنية" ? "ساعات" : "أيام"}
+                        </td>
+                        <td className="py-2">{leave.status}</td>
+                        <td className="py-2">
+                          {leave.type === "زمنية"
+                            ? `${leave.startTime} - ${leave.endTime}`
+                            : `${formatDate(leave.startDate)} - ${formatDate(
+                                leave.endDate
+                              )}`}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              ) : (
+                <p className="text-gray-500">لا توجد طلبات إجازة</p>
+              )}
+            </div>
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-8">
             {/* العمود الثالث */}
             <div>
@@ -529,18 +611,6 @@ const EmployeeInfo = () => {
             </div>
           </div>
         </div>
-      </div>
-      <div className="fixed bottom-6 right-6 z-50">
-        <Link href="/Notifications">
-          <div className="relative bg-white p-3 rounded-full shadow-lg cursor-pointer hover:bg-gray-100 transition">
-            <FaBell className="text-xl text-indigo-600" />
-            {unreadCount > 0 && (
-              <span className="absolute top-0 right-0 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs">
-                {unreadCount}
-              </span>
-            )}
-          </div>
-        </Link>
       </div>
     </div>
   );

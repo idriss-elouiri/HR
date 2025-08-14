@@ -86,7 +86,7 @@ const SystemReports = () => {
     yaxis: {
       labels: { style: { colors: "#6B7280", fontSize: "12px" } },
       title: {
-        text: "المبلغ (ريال)",
+        text: "المبلغ (دينار)",
         style: { color: "#6B7280", fontSize: "14px" },
       },
     },
@@ -384,20 +384,6 @@ const SystemReports = () => {
     <div className="bg-white rounded-xl shadow-lg p-6">
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-bold text-gray-800">التقارير المالية</h2>
-        <div className="flex gap-3">
-          <button
-            onClick={() => exportToExcel(salaries, "التقرير_المالي")}
-            className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center gap-2"
-          >
-            <FaFileExcel /> Excel
-          </button>
-          <button
-            onClick={() => exportToPDF(salaries, "التقرير_المالي")}
-            className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg flex items-center gap-2"
-          >
-            <FaFilePdf /> PDF
-          </button>
-        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
@@ -527,20 +513,6 @@ const SystemReports = () => {
         <h2 className="text-2xl font-bold text-gray-800">
           تقارير الحضور والانصراف
         </h2>
-        <div className="flex gap-3">
-          <button
-            onClick={() => exportToExcel(attendance, "تقرير_الحضور")}
-            className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center gap-2"
-          >
-            <FaFileExcel /> Excel
-          </button>
-          <button
-            onClick={() => exportToPDF(attendance, "تقرير_الحضور")}
-            className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg flex items-center gap-2"
-          >
-            <FaFilePdf /> PDF
-          </button>
-        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
@@ -633,20 +605,6 @@ const SystemReports = () => {
         <h2 className="text-2xl font-bold text-gray-800">
           تقرير الغياب والتأخيرات
         </h2>
-        <div className="flex gap-3">
-          <button
-            onClick={() => exportToExcel(absences, "تقرير_الغياب")}
-            className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center gap-2"
-          >
-            <FaFileExcel /> Excel
-          </button>
-          <button
-            onClick={() => exportToPDF(absences, "تقرير_الغياب")}
-            className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg flex items-center gap-2"
-          >
-            <FaFilePdf /> PDF
-          </button>
-        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">

@@ -35,7 +35,6 @@ const Dashboard = () => {
   const [currentMonth] = useState(moment().format("MMMM YYYY"));
   const [error, setError] = useState(null);
   const apiUrl = process.env.NEXT_PUBLIC_API_URL;
-
   // جلب بيانات لوحة التحكم من API باستخدام fetch
   useEffect(() => {
     const fetchDashboardData = async () => {

@@ -110,7 +110,8 @@ const employeeSchema = new mongoose.Schema(
     },
     rank: {
       type: String,
-      trim: true,
+      enum: ["أولى", "ثانية", "ثالثة", "رابعة", "خامسة"],
+      required: false,
     },
     lastSalaryIncrease: {
       date: Date,

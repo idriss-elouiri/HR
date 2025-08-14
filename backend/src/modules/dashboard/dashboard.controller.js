@@ -242,18 +242,18 @@ export const getDashboardData = async (req, res, next) => {
       upcomingLeaves: upcomingLeaves.map((leave) => ({
         name: leave.employee?.fullName || "غير معروف", // التحقق هنا
         detail: `${leave.duration} يوم - ${leave.type}`,
-        date: leave.startDate.toLocaleDateString("ar-EG"),
+        date: leave.startDate.toLocaleDateString("ar-IQ"),
         status: leave.status,
       })),
       recentAbsences: recentAbsences.map((absence) => ({
         name: absence.employee.fullName,
         detail: `${absence.type} - ${absence.duration} ساعة`,
-        date: absence.date.toLocaleDateString("ar-EG"),
+        date: absence.date.toLocaleDateString("ar-IQ"),
         status: absence.status,
       })),
       pendingSalaries: pendingSalaries.map((salary) => ({
         name: salary.employee?.fullName,
-        detail: `${salary.netSalary.toLocaleString("ar-EG")} ر.س`,
+        detail: `${salary.netSalary.toLocaleString("ar-IQ")} د.ع`,
         date: `${salary.month}/${salary.year}`,
         status: salary.status,
       })),

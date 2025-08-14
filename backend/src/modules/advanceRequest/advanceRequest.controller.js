@@ -35,7 +35,7 @@ export const createAdvanceRequest = async (req, res, next) => {
         user: user._id,
         title: "طلب سلفة جديد",
         message: `الموظف ${employee.fullName} قدم طلب سلفة بمبلغ ${amount} د.ع`,
-        link: `/salaries`, // تغيير الرابط إلى صفحة الرواتب
+        link: `/Salaries`, // تغيير الرابط إلى صفحة الرواتب
         type: "advance",
         metadata: {
           advanceRequestId: advanceRequest._id,
@@ -62,11 +62,6 @@ export const getAdvanceRequests = async (req, res, next) => {
 
     if (employeeId) query.employee = employeeId;
     if (status) query.status = status;
-
-    // للموظفين العاديين: يمكنهم رؤية طلباتهم فقط
-    if (!req.user.isAdmin && !req.user.isHR) {
-      query.employee = req.user.employee;
-    }
 
     const advanceRequests = await AdvanceRequest.find(query)
       .populate("employee", "fullName employeeId")

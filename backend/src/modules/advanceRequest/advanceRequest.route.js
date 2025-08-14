@@ -10,7 +10,7 @@ import { verifyToken } from "../../utils/verifyUser.js";
 const router = express.Router();
 
 router.post("/", verifyToken, createAdvanceRequest);
-router.get("/", verifyToken, getAdvanceRequests);
+router.get("/", getAdvanceRequests);
 router.put("/:id", verifyToken, updateAdvanceRequest);
 router.delete("/:id", verifyToken, deleteAdvanceRequest);
 

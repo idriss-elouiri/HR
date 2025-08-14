@@ -4,7 +4,7 @@ const allowanceSchema = new mongoose.Schema({
   type: {
     type: String,
     required: true,
-    enum: ["سنوية", "مكافأة", "حافز", "أخرى"],
+    enum: ["سنوية", "مكافأة", "حافز", "بدل رتبة", "أخرى"],
   },
   amount: {
     type: Number,
