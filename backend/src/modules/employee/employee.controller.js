@@ -93,7 +93,7 @@ export const loginEmployee = async (req, res, next) => {
 };
 export const loginHrEmployee = async (req, res, next) => {
   const { fullName, email } = req.body;
-console.log(fullName, email)
+  console.log(fullName, email);
   try {
     // البحث باستخدام تعبير منتظم لتجاهل حالة الأحرف
     const validEmployee = await Employee.findOne({
@@ -141,7 +141,7 @@ console.log(fullName, email)
       .cookie("access_token", token, {
         httpOnly: true,
         sameSite: "None",
-        secure: true,
+        secure: process.env.NODE_ENV === "production",
         maxAge: 7 * 24 * 60 * 60 * 1000,
       })
       .json({
