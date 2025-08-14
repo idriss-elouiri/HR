@@ -70,8 +70,10 @@ export const login = async (req, res, next) => {
     res
       .status(200)
       .cookie("access_token", token, {
+        httpOnly: true,
         secure: true,
-        maxAge: 7 * 24 * 60 * 60 * 1000,
+        sameSite: "None",
+        domain: ".vercel.app",
       })
       .json(userWithoutPassword);
   } catch (error) {
