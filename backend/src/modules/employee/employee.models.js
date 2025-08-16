@@ -143,6 +143,7 @@ const employeeSchema = new mongoose.Schema(
       trim: true,
       sparse: true,
     },
+
     isHR: {
       type: Boolean,
       default: false,

@@ -8,7 +8,8 @@ import {
   updateEmployeeShift,
   loginEmployee,
   getEmployeeByEmployeeId,
-  loginHrEmployee, // إضافة الدالة الجديدة
+  loginHrEmployee,
+  getEmployeeByFingerprint, // إضافة الدالة الجديدة
 } from "./employee.controller.js";
 import { validateZod } from "../../middlewares/validate-zod.js";
 import { employeeSchema } from "./employee.schema.js";
@@ -30,5 +31,6 @@ router.put(
 router.delete("/:id", verifyToken, deleteEmployee);
 router.put("/:id/shift", verifyToken, updateEmployeeShift);
 router.get("/by-employee-id/:employeeId", getEmployeeByEmployeeId);
+router.get("/fingerprint/:fingerprintId", getEmployeeByFingerprint);
 
 export default router;

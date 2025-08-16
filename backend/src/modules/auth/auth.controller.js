@@ -35,7 +35,7 @@ export const register = async (req, res, next) => {
       .status(201)
       .cookie("access_token", token, {
         httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
+        secure: true,
         sameSite: "None", // حتى يُسمح له بالعمل بين دومينات مختلفة
         maxAge: 7 * 24 * 60 * 60 * 1000, // 7 أيام
       })

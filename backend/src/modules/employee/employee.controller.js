@@ -140,8 +140,8 @@ export const loginHrEmployee = async (req, res, next) => {
       .status(200)
       .cookie("access_token", token, {
         httpOnly: true,
-        sameSite: "None",
         secure: process.env.NODE_ENV === "production",
+        sameSite: "None", // حتى يُسمح له بالعمل بين دومينات مختلفة
         maxAge: 7 * 24 * 60 * 60 * 1000,
       })
       .json({
@@ -298,5 +298,27 @@ export const getEmployeeByEmployeeId = async (req, res, next) => {
     });
   } catch (error) {
     next(error); // استخدام next لنقل الخطأ
+  }
+};
+
+export const getEmployeeByFingerprint = async (req, res, next) => {
+  try {
+    const { fingerprintId } = req.params;
+
+    const employee = await Employee.findOne({ fingerprintId }).select("-__v");
+
+    if (!employee) {
+      return res.status(404).json({
+        success: false,
+        message: "الموظف غير موجود",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      data: employee,
+    });
+  } catch (error) {
+    next(error);
   }
 };

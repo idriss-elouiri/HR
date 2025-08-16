@@ -219,7 +219,6 @@ const Sidebar = () => {
         )}
 
         {/* الحضور والانصراف - للمشرفين وموظفي HR فقط */}
-        {(isAdmin || isHR) && (
           <Link
             href="/ZKAttendance"
             onClick={() => handleLinkClick("attendance")}
@@ -236,7 +235,6 @@ const Sidebar = () => {
               الحضور والانصراف
             </span>
           </Link>
-        )}
 
         {/* نظام التقارير - للمشرفين فقط */}
         {isAdmin && (
